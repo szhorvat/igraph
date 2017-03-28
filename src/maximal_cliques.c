@@ -404,3 +404,12 @@ int igraph_maximal_cliques_subset(const igraph_t *graph,
 #include "maximal_cliques_template.h"
 #undef IGRAPH_MC_FULL
 
+
+#define IGRAPH_MC_CALLBACK
+#include "maximal_cliques_template.h"
+#undef IGRAPH_MC_CALLBACK
+
+
+#define IGRAPH_MC_HIST
+#include "maximal_cliques_template.h"
+#undef IGRAPH_MC_HIST

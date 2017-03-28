@@ -389,7 +389,8 @@ typedef enum {
   IGRAPH_EGLP             = 56,
   IGRAPH_CPUTIME          = 57,
   IGRAPH_EUNDERFLOW       = 58,
-  IGRAPH_ERWSTUCK         = 59
+  IGRAPH_ERWSTUCK         = 59,
+  IGRAPH_SEARCH_STOPPED   = 60, /* undocumented, used internally; signals a request to stop in functions like igraph_i_maximal_cliques_bk */
 } igraph_error_type_t;
 
 /**
