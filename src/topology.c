@@ -30,6 +30,7 @@
 #include "igraph_conversion.h"
 #include "igraph_stack.h"
 #include "igraph_attributes.h"
+#include "igraph_structural.h"
 #include "config.h"
 
 const unsigned int igraph_i_isoclass_3[] = {  0, 1, 1, 3, 1, 5, 6, 7,
@@ -1105,6 +1106,11 @@ int igraph_isomorphic_function_vf2(const igraph_t *graph1, const igraph_t *graph
     edge_color1 = edge_color2 = 0;
   }
 
+  if (no_of_nodes != igraph_vcount(graph2) ||
+      no_of_edges != igraph_ecount(graph2)) {
+    return 0;
+  }
+  
   if (vertex_color1) {
     if (igraph_vector_int_size(vertex_color1) != no_of_nodes ||
 	igraph_vector_int_size(vertex_color2) != no_of_nodes) {
@@ -1119,11 +1125,6 @@ int igraph_isomorphic_function_vf2(const igraph_t *graph1, const igraph_t *graph
     }
   }
 
-  if (no_of_nodes != igraph_vcount(graph2) ||
-      no_of_edges != igraph_ecount(graph2)) {
-    return 0;
-  }
-  
   /* Check color distribution */
   if (vertex_color1) {
     int ret=0;
