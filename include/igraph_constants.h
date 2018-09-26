@@ -83,6 +83,9 @@ typedef enum { IGRAPH_REALIZE_DEGSEQ_SMALLEST = 0,
 typedef enum { IGRAPH_RANDOM_TREE_PRUFER = 0,
              IGRAPH_RANDOM_TREE_LERW } igraph_random_tree_t;
 
+typedef enum { IGRAPH_RANDOM_TREE_PRUFER = 0,
+             IGRAPH_RANDOM_TREE_LERW } igraph_random_tree_t;
+
 typedef enum { IGRAPH_FILEFORMAT_EDGELIST=0,
 	       IGRAPH_FILEFORMAT_NCOL,
 	       IGRAPH_FILEFORMAT_PAJEK,
