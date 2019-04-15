@@ -1504,7 +1504,7 @@ int igraph_pagerank_old(const igraph_t *graph, igraph_vector_t *res,
   return 0;
 }
 
-// Not declared static so that the testsuite can use it, but not part of the public API.
+/* Not declared static so that the testsuite can use it, but not part of the public API. */
 int igraph_rewire_core(igraph_t *graph, igraph_integer_t n, igraph_rewiring_t mode, igraph_bool_t use_adjlist) {
   long int no_of_nodes=igraph_vcount(graph);
   long int no_of_edges=igraph_ecount(graph);
@@ -6885,8 +6885,10 @@ static int igraph_i_is_tree_visitor(igraph_integer_t root, const igraph_adjlist_
 
         /* take a vertex from the stack, mark it as visited */
         u = igraph_stack_int_pop(&stack);
-        VECTOR(visited)[u] = 1;
-        *visited_count += 1;
+        if (IGRAPH_LIKELY(! VECTOR(visited)[u])) {
+            VECTOR(visited)[u] = 1;
+            *visited_count += 1;
+        }
 
         /* register all its yet-unvisited neighbours for future processing */
         neighbors = igraph_adjlist_get(al, u);
