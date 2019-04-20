@@ -2146,8 +2146,10 @@ int igraph_edge_connectivity(const igraph_t *graph, igraph_integer_t *res,
    * which cannot be cast to an integer. We catch this case early
    * and postulate the edge-connectivity of this graph to be 0.
    * This is consistent with what other software packages return. */
-  if (number_of_nodes <= 1)
+  if (number_of_nodes <= 1) {
+      *res = 0;
       return 0;
+  }
   
   /* Use that vertex.connectivity(G) <= edge.connectivity(G) <= min(degree(G)) */
   if (checks) {
