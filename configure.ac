@@ -1,4 +1,4 @@
-AC_INIT(igraph, esyscmd([tr -d '\n' < VERSION]), csardi.gabor@gmail.com)
+AC_INIT(igraph, esyscmd([tr -d '\n' < IGRAPH_VERSION]), csardi.gabor@gmail.com)
 AC_CONFIG_SRCDIR(src/games.c)
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 AC_CONFIG_HEADERS([config.h])
@@ -345,8 +345,6 @@ fi
 if test "$use_asan" = "yes"; then
   CFLAGS="${CFLAGS} -g -fsanitize=address -fno-omit-frame-pointer"
   CXXFLAGS="${CXXFLAGS} -g -fsanitize=address -fno-omit-frame-pointer"
-  CC="clang"
-  CXX="clang++"
 fi
 
 AC_CONFIG_FILES([Makefile src/Makefile igraph.pc igraph_Info.plist doc/Makefile include/igraph_version.h include/igraph_threading.h])
