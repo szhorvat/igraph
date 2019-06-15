@@ -115,7 +115,7 @@
     IGRAPH_CHECK(igraph_vector_init(cl, clsize)); \
     for (j=0; j<clsize; j++) { VECTOR(*cl)[j] = VECTOR(*R)[j]; } \
     if (!cliquehandler_fn(cl, arg)) \
-        return IGRAPH_SEARCH_STOPPED; \
+        return IGRAPH_STOP; \
 } while (0)
 #define FINALLY
 #define FOR_LOOP_OVER_VERTICES for (i=0; i<no_of_nodes; i++) {
@@ -369,7 +369,7 @@ int FUNCTION(igraph_maximal_cliques,SUFFIX)(
 				&PX, PS, PE, XS, XE, PS, XE, &R, &pos,
 				&adjlist, RESNAME, &nextv, &H, min_size,
 				max_size);
-    if (err == IGRAPH_SEARCH_STOPPED) {
+    if (err == IGRAPH_STOP) {
         break;
     } else {
         IGRAPH_CHECK(err);
