@@ -1185,7 +1185,7 @@ int igraph_i_all_st_mincuts_pivot(const igraph_t *graph,
   const igraph_vector_bool_t *active=data->active;
 
   long int no_of_nodes=igraph_vcount(graph);
-  long int i;
+  long int i,j;
   igraph_vector_t Sbar_map, Sbar_invmap;
   igraph_vector_t keep;
   igraph_t Sbar;
@@ -1239,21 +1239,21 @@ int igraph_i_all_st_mincuts_pivot(const igraph_t *graph,
     /* OK, we found a pivot element. I(S,v) contains all elements
        that can reach the pivot element */
     igraph_vector_t Isv_min;
-    long int isvlen;
     IGRAPH_VECTOR_INIT_FINALLY(&Isv_min, 0);
     *v=(long int) VECTOR(Sbar_invmap)[ (long int) VECTOR(M)[i] ];
     /* TODO: restricted == keep ? */
     IGRAPH_CHECK(igraph_bfs(graph, /*root=*/ (igraph_integer_t) *v,/*roots=*/ 0,
-			    /*mode=*/ IGRAPH_IN, /*unreachable=*/ 0,
-			    /*restricted=*/ &keep, /*order=*/ &Isv_min,
-			    /*rank=*/ 0, /*father=*/ 0, /*pred=*/ 0,
-			    /*succ=*/ 0, /*dist=*/ 0, /*callback=*/ 0,
-			    /*extra=*/ 0));
-    for (isvlen=0; isvlen<no_of_nodes; isvlen++) {
-      if (!IGRAPH_FINITE(VECTOR(Isv_min)[isvlen])) { break; }
+          /*mode=*/ IGRAPH_IN, /*unreachable=*/ 0,
+          /*restricted=*/ &keep, /*order=*/ &Isv_min,
+          /*rank=*/ 0, /*father=*/ 0, /*pred=*/ 0,
+          /*succ=*/ 0, /*dist=*/ 0, /*callback=*/ 0,
+          /*extra=*/ 0));
+    for (j=0; j<no_of_nodes; j++) {
+      igraph_real_t u = VECTOR(Isv_min)[j];
+      if (!IGRAPH_FINITE(u)) { break; }
+      if (!igraph_estack_iselement(T, u))
+        igraph_vector_push_back(Isv, u);
     }
-    igraph_vector_resize(&Isv_min, isvlen);
-    igraph_vector_update(Isv, &Isv_min);
     igraph_vector_destroy(&Isv_min);
     IGRAPH_FINALLY_CLEAN(1);
   }
@@ -1443,6 +1443,7 @@ int igraph_all_st_mincuts(const igraph_t *graph, igraph_real_t *value,
     VECTOR(revmap_ptr)[id]=i+1;
   }
   
+  /* Create partitions in original graph */
   nocuts=igraph_vector_ptr_size(&closedsets);
   igraph_vector_ptr_clear(mypartition1s);
   IGRAPH_CHECK(igraph_vector_ptr_reserve(mypartition1s, nocuts));
@@ -1473,6 +1474,7 @@ int igraph_all_st_mincuts(const igraph_t *graph, igraph_real_t *value,
   igraph_vector_ptr_destroy(&closedsets);
   IGRAPH_FINALLY_CLEAN(3);
 
+  /* Create cuts in original graph */
   if (cuts) {
     igraph_vector_long_t memb;
     IGRAPH_CHECK(igraph_vector_long_init(&memb, no_of_nodes));
@@ -1492,11 +1494,13 @@ int igraph_all_st_mincuts(const igraph_t *graph, igraph_real_t *value,
 	VECTOR(memb)[vtx]=i+1;
       }
       for (j=0; j<no_of_edges; j++) {
-	long int from=IGRAPH_FROM(graph, j);
-	long int to=IGRAPH_TO(graph, j);
-	if (VECTOR(memb)[from] == i+1 && VECTOR(memb)[to] != i+1) {
-	  IGRAPH_CHECK(igraph_vector_push_back(v, j)); /* TODO: allocation */
-	}
+        if (VECTOR(flow)[j] > 0) {
+          long int from=IGRAPH_FROM(graph, j);
+          long int to=IGRAPH_TO(graph, j);
+          if (VECTOR(memb)[from] == i+1 && VECTOR(memb)[to] != i+1) {
+            IGRAPH_CHECK(igraph_vector_push_back(v, j)); /* TODO: allocation */
+          }
+        }
       }
       VECTOR(*cuts)[i] = v;
       IGRAPH_FINALLY_CLEAN(1);
