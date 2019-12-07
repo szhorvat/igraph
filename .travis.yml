@@ -1,10 +1,13 @@
 
+branches:
+  only:
+    - IGraphM-040
+
 language: c
 
 addons:
   apt:
     packages:
-    - gfortran
     - flex
     - bison
 
