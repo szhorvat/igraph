@@ -20,15 +20,17 @@ addons:
     - bison    
 
 install:
-- ./bootstrap.sh
-- ./configure
-- make
+  - ./get-deps.sh
+  - export CPPFLAGS="-I$HOME/local/include" LDFLAGS="-L$HOME/local/lib"
+  - ./bootstrap.sh
+  - ./configure --with-external-glpk
+  - make
 
 script:
-- make check
+  - make check
 
 after_failure:
-- find tests/testsuite.dir -name testsuite.log -exec cat \{\} \;
+  - find tests/testsuite.dir -name testsuite.log -exec cat \{\} \;
 
 notifications:
   email:
