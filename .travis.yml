@@ -5,11 +5,19 @@ branches:
 
 language: c
 
+os:
+  - linux
+  - osx
+
 addons:
   apt:
     packages:
     - flex
     - bison
+  homebrew:
+    packages:
+    - flex
+    - bison    
 
 install:
 - ./bootstrap.sh
@@ -27,4 +35,3 @@ notifications:
     on_success: change
     on_failure: always
 
-sudo: false
