@@ -17,10 +17,14 @@ addons:
   homebrew:
     packages:
     - flex
-    - bison    
+    - bison
+
+cache:
+  directories:
+    - /home/travis/local
 
 install:
-  - ./get-deps.sh
+  - if [ ! -d $HOME/local ]; then ./get-deps.sh; fi
   - export CPPFLAGS="-I$HOME/local/include" LDFLAGS="-L$HOME/local/lib"
   - ./bootstrap.sh
   - ./configure --with-external-glpk
