@@ -11,7 +11,7 @@ if [ ! -d ${gmp} ]; then
   wget https://gmplib.org/download/gmp/${gmp}.tar.bz2
   tar xfj ${gmp}.tar.bz2
   cd ${gmp}
-  ./configure --prefix=$HOME/local
+  ./configure --prefix=$HOME/local --with-pic
   make
   make install
 else
@@ -24,7 +24,7 @@ if [ ! -d ${glpk} ]; then
   wget http://ftp.gnu.org/gnu/glpk/${glpk}.tar.gz
   tar xfz ${glpk}.tar.gz
   cd ${glpk}
-  ./configure --prefix=$HOME/local
+  ./configure --prefix=$HOME/local --with-pic
   make
   make install
 else
