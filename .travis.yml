@@ -5,36 +5,57 @@ branches:
 
 language: c
 
-os:
-  - linux
-  - osx
-
 addons:
   apt:
     packages:
     - flex
     - bison
+    - docbook2x
+    - xmlto
+    - texinfo
+    - source-highlight
+    - libxml2-utils
+    - xsltproc
+    - fop
   homebrew:
     packages:
     - flex
     - bison
-
-cache:
-  directories:
-    - /home/travis/local
-
-install:
-  - if [ ! -d $HOME/local ]; then ./get-deps.sh; fi
-  - export CPPFLAGS="-I$HOME/local/include" LDFLAGS="-L$HOME/local/lib"
-  - ./bootstrap.sh
-  - ./configure --with-external-glpk
-  - make
 
 script:
   - make check
 
 after_failure:
   - find tests/testsuite.dir -name testsuite.log -exec cat \{\} \;
+
+jobs:
+  include:
+    - stage: test
+      os: linux
+      install:
+        - if [ ! -d $HOME/local ]; then ./get-deps.sh; fi
+        - export CPPFLAGS="-I$HOME/local/include" LDFLAGS="-L$HOME/local/lib"
+        - ./bootstrap.sh
+        - ./configure --with-external-glpk
+        - make
+    - stage: test
+      os: osx
+      install:
+        - if [ ! -d $HOME/local ]; then ./get-deps.sh; fi
+        - export CPPFLAGS="-I$HOME/local/include" LDFLAGS="-L$HOME/local/lib"
+        - ./bootstrap.sh
+        - ./configure --with-external-glpk
+        - make
+    - stage: documentation
+      language: shell
+      os: linux
+      install:
+        - ./bootstrap.sh
+        - ./configure
+        - cd doc
+      script:
+        - make html
+        - make pdf
 
 notifications:
   email:
