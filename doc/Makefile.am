@@ -58,7 +58,7 @@ igraph-docs.xml: $(DOCINCLUDES) $(EXAMPLES)
 	touch igraph-docs.xml
 
 igraph-docs0.xml: igraph-docs.xml
-	sed "s/@IGRAPH_VERSION@/`cat $(top_srcdir)/IGRAPH_VERSION`/g" $(top_srcdir)/doc/igraph-docs.xml > $(top_srcdir)/doc/igraph-docs0.xml
+	sed "s/@IGRAPH_VERSION@/`cat $(top_srcdir)/IGRAPH_VERSION`/g" $(top_srcdir)/doc/igraph-docs.xml > igraph-docs0.xml
 
 vector.xml: vector.xxml $(INCLUDEDIR)/igraph_vector_pmt.h $(SRCDIR)/vector.pmt $(SRCDIR)/vector_ptr.c $(SRCDIR)/vector.c $(INCLUDEDIR)/igraph_vector_ptr.h
 	$(DOXROX) -t $< -e $(REGEX) -o $@ $(INCLUDEDIR)/igraph_vector_pmt.h \
@@ -128,7 +128,8 @@ structural.xml: structural.xxml $(SRCDIR)/structural_properties.c \
 	$(SRCDIR)/centrality.c $(SRCDIR)/decomposition.c $(SRCDIR)/mixing.c \
 	$(INCLUDEDIR)/igraph_arpack.h  $(SRCDIR)/distances.c \
 	$(SRCDIR)/feedback_arc_set.c $(SRCDIR)/matching.c $(SRCDIR)/triangles.c \
-	$(SRCDIR)/paths.c $(INCLUDEDIR)/igraph_centrality.h
+	$(SRCDIR)/paths.c $(INCLUDEDIR)/igraph_centrality.h \
+	$(SRCDIR)/scan.c
 
 
 iterators.xml: iterators.xxml $(SRCDIR)/iterators.c $(INCLUDEDIR)/igraph_iterators.h
@@ -147,7 +148,7 @@ foreign.xml: foreign.xxml $(SRCDIR)/foreign.c $(SRCDIR)/foreign-graphml.c
 	$(SRCDIR)/foreign-graphml.c
 
 nongraph.xml: nongraph.xxml $(SRCDIR)/other.c $(SRCDIR)/random.c $(SRCDIR)/version.c $(INCLUDEDIR)/igraph_nongraph.h
-	$(DOXROX) -t $< -e $(REGEX) -o $@ $(INCLUDEDIR)/igraph_nongraph.h $(SRCDIR)/other.c $(SRCDIR)/random.c $(SRCDIR)/version.c
+	$(DOXROX) -t $< -e $(REGEX) -o $@ $(INCLUDEDIR)/igraph_nongraph.h $(SRCDIR)/other.c $(SRCDIR)/random.c $(SRCDIR)/version.c $(SRCDIR)/dotproduct.c
 
 isomorphism.xml: isomorphism.xxml $(SRCDIR)/topology.c $(INCLUDEDIR)/igraph_topology.h $(SRCDIR)/bliss.cc $(SRCDIR)/lad.c
 	$(DOXROX) -c -t $< -e $(REGEX) -o $@ $(SRCDIR)/topology.c $(INCLUDEDIR)/igraph_topology.h $(SRCDIR)/bliss.cc $(SRCDIR)/lad.c
@@ -207,9 +208,9 @@ memory.xml: memory.xxml $(SRCDIR)/memory.c
 	$(DOXROX) -t $< -e $(REGEX) -o $@ $(SRCDIR)/memory.c
 
 spatialgames.xml: spatialgames.xxml \
-		   $(SRCDIR)/microscopic_update.c
+		   $(SRCDIR)/microscopic_update.c $(SRCDIR)/sir.c $(INCLUDEDIR)/igraph_epidemics.h
 	$(DOXROX) -t $< -e $(REGEX) -o $@ \
-	$(SRCDIR)/microscopic_update.c
+	$(SRCDIR)/microscopic_update.c $(SRCDIR)/sir.c $(INCLUDEDIR)/igraph_epidemics.h
 
 threading.xml: threading.xxml $(BUILD_INCLUDEDIR)/igraph_threading.h
 	$(DOXROX) -t $< -e $(REGEX) -o $@ $(BUILD_INCLUDEDIR)/igraph_threading.h
