@@ -6,9 +6,14 @@
 
 ### Changed
 
+ - Improved interruptability: `igraph_degree_sequence_game()`
+ - Improved argument checking: `igraph_forest_fire_game()`
+
 ### Fixed
 
  - `igraph_community_edge_betweenness()`: fix for graphs with no edges (PR #1312)
+ - `igraph_bridges()` now handles multigraphs correctly (PR #1335)
+ - `igraph_avg_nearest_neighbor_degree`: fix for memory leak in weighted case (PR #1339)
 
 ## [0.8.0] - 2020-01-29
 
@@ -77,6 +82,7 @@
  - `igraph_unfold_tree()`: no longer preserves edge ordering of original graph
  - `igraph_decompose()`: support strongly connected components
  - `igraph_isomorphic_bliss()`, `igraph_canonical_permutation()`, `igraph_automorphisms()`: added additional arguments to support vertex colored graphs (PR #873)
+ - `igraph_extended_chordal_ring`: added argument to support direction (PR #1096), and fixed issue #1093.
 
 ### Other
 
