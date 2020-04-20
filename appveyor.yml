@@ -47,7 +47,6 @@ install:
     - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S autoconf automake bison flex"
     - C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S libxml2-devel zip xz"
 
-
     # also install a msvc build environment -> use libxml2 from conda-forge
     # updating conda always updates python, even with "no-update-deps" and
     # updating python takes ages on appveyor... So just keep the shorter PATH
