@@ -54,6 +54,20 @@ jobs:
         - ./bootstrap.sh
         - ./configure --with-external-glpk
         - make
+    - name: "Linux"
+      os: linux
+      arch: ppc64le
+      install:
+        - ./bootstrap.sh
+        - ./configure --with-external-glpk
+        - make
+    - name: "Linux"
+      os: linux
+      arch: s390x
+      install:
+        - ./bootstrap.sh
+        - ./configure --with-external-glpk
+        - make                
     - name: "Linux x87"
       os: linux
       arch: amd64
