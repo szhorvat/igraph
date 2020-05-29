@@ -7,6 +7,10 @@ language: c
 dist: xenial
 os: linux
 
+env:
+  global:
+    - MAKEFLAGS="-j 2"
+
 addons:
   apt:
     packages:
