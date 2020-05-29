@@ -38,12 +38,21 @@ jobs:
   include:
     - name: "Linux"
       os: linux
+      arch: amd64
+      install:
+        - ./bootstrap.sh
+        - ./configure --with-external-glpk
+        - make
+    - name: "Linux"
+      os: linux
+      arch: arm64
       install:
         - ./bootstrap.sh
         - ./configure --with-external-glpk
         - make
     - name: "Linux x87"
       os: linux
+      arch: amd64
       env:
         - CFLAGS="-mfpmath=387" CXXFLAGS="-mfpmath=387"
       install:
