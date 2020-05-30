@@ -53,6 +53,7 @@ jobs:
     - name: "Linux external deps"
       os: linux
       arch: amd64
+      dist: bionic
       install:
         - ./bootstrap.sh
         - ./configure --with-external-glpk --with-external-blas --with-external-lapack --with-external-arpack
