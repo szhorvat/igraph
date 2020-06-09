@@ -9,13 +9,16 @@
 ### Changed
 
  - `igraph_community_multilevel()`: added resolution parameter.
- - `igraph_modularity()` and `igraph_modularity_matrix()`: added resolution parameter, parameter ordering has changed.
+ - `igraph_modularity()` and `igraph_modularity_matrix()`: added resolution parameter.
  - `igraph_modularity()` will now issue a warning instead of an error when passing a directed graph.
+ - `igraph_modularity()` now supports computing the directed version of modularity.
 
 ### Fixed
 
+ - `igraph_count_multiple()` was giving incorrect results for self-loops in directed graph (PR #1399).
  - `igraph_betweenness_estimate()`: fixed incorrect results with finite cutoff (PR #1392).
  - `igraph_eigen_matrix_symmetric()`: fixed incorrect matrix multiplication (PR #1379).
+ - Corrected several issues that could arise during an error condition (PRs #1405, #1406).
 
 ### Other
 
