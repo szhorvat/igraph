@@ -2445,10 +2445,8 @@ int igraph_edge_betweenness_estimate(const igraph_t *graph, igraph_vector_t *res
             neip = igraph_inclist_get(elist_out_p, actnode);
             neino = igraph_vector_int_size(neip);
             for (i = 0; i < neino; i++) {
-                igraph_integer_t edge = (igraph_integer_t) VECTOR(*neip)[i], from, to;
-                long int neighbor;
-                igraph_edge(graph, edge, &from, &to);
-                neighbor = actnode != from ? from : to;
+                igraph_integer_t edge = (igraph_integer_t) VECTOR(*neip)[i];
+                long int neighbor = (long int) IGRAPH_OTHER(graph, edge, actnode);
                 if (nrgeo[neighbor] != 0) {
                     /* we've already seen this node, another shortest path? */
                     if (distance[neighbor] == distance[actnode] + 1) {
@@ -2479,11 +2477,8 @@ int igraph_edge_betweenness_estimate(const igraph_t *graph, igraph_vector_t *res
             neip = igraph_inclist_get(elist_in_p, actnode);
             neino = igraph_vector_int_size(neip);
             for (i = 0; i < neino; i++) {
-                igraph_integer_t from, to;
-                long int neighbor;
                 igraph_integer_t edgeno = (igraph_integer_t) VECTOR(*neip)[i];
-                igraph_edge(graph, edgeno, &from, &to);
-                neighbor = actnode != from ? from : to;
+                long int neighbor = (long int) IGRAPH_OTHER(graph, edgeno, actnode);
                 if (distance[neighbor] == distance[actnode] - 1 &&
                     nrgeo[neighbor] != 0) {
                     tmpscore[neighbor] +=
@@ -2627,7 +2622,8 @@ static int igraph_i_closeness_estimate_weighted(const igraph_t *graph,
 
     int cmp_result;
     const double eps = IGRAPH_SHORTEST_PATH_EPSILON;
-    igraph_real_t mindist;
+
+    igraph_real_t mindist = 0;
 
     igraph_bool_t warning_shown = 0;
 
@@ -2812,8 +2808,9 @@ int igraph_closeness_estimate(const igraph_t *graph, igraph_vector_t *res,
     igraph_vector_int_t *neis;
     long int i, j;
     long int nodes_reached;
-    long int actdist;
     igraph_adjlist_t allneis;
+
+    long int actdist = 0;
 
     igraph_dqueue_t q;
 

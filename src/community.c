@@ -129,8 +129,8 @@ static int igraph_i_community_eb_get_merges2(const igraph_t *graph,
 
     for (i = igraph_vector_size(edges) - 1; i >= 0; i--) {
         long int edge = (long int) VECTOR(*edges)[i];
-        long int from = IGRAPH_FROM(graph, edge);
-        long int to = IGRAPH_TO(graph, edge);
+        long int from = IGRAPH_FROM(graph, (igraph_integer_t) edge);
+        long int to = IGRAPH_TO(graph, (igraph_integer_t) edge);
         long int c1 = (long int) VECTOR(mymembership)[from];
         long int c2 = (long int) VECTOR(mymembership)[to];
         igraph_real_t actmod;
@@ -544,10 +544,8 @@ int igraph_community_edge_betweenness(const igraph_t *graph,
                     neip = igraph_inclist_get(elist_out_p, actnode);
                     neino = igraph_vector_int_size(neip);
                     for (i = 0; i < neino; i++) {
-                        igraph_integer_t edge = (igraph_integer_t) VECTOR(*neip)[i], from, to;
-                        long int neighbor;
-                        igraph_edge(graph, edge, &from, &to);
-                        neighbor = actnode != from ? from : to;
+                        igraph_integer_t edge = (igraph_integer_t) VECTOR(*neip)[i];
+                        long int neighbor= (long int) IGRAPH_OTHER(graph, edge, actnode);
                         if (nrgeo[neighbor] != 0) {
                             /* we've already seen this node, another shortest path? */
                             if (distance[neighbor] == distance[actnode] + 1) {
@@ -2800,7 +2798,6 @@ static int igraph_i_multilevel_simplify_multiple(igraph_t *graph, igraph_vector_
     long int ecount = igraph_ecount(graph);
     long int i, l = -1, last_from = -1, last_to = -1;
     igraph_bool_t directed = igraph_is_directed(graph);
-    igraph_integer_t from, to;
     igraph_vector_t edges;
     igraph_i_multilevel_link *links;
 
@@ -2814,6 +2811,7 @@ static int igraph_i_multilevel_simplify_multiple(igraph_t *graph, igraph_vector_
     IGRAPH_FINALLY(igraph_free, links);
 
     for (i = 0; i < ecount; i++) {
+        igraph_integer_t from, to;
         igraph_edge(graph, (igraph_integer_t) i, &from, &to);
         links[i].from = from;
         links[i].to = to;
@@ -3052,7 +3050,6 @@ static int igraph_i_community_multilevel_step(
     long int i, j;
     long int vcount = igraph_vcount(graph);
     long int ecount = igraph_ecount(graph);
-    igraph_integer_t ffrom, fto;
     igraph_real_t q, pass_q;
     int pass;
     igraph_bool_t changed = 0;
@@ -3106,6 +3103,7 @@ static int igraph_i_community_multilevel_step(
 
     /* Some more initialization :) */
     for (i = 0; i < ecount; i++) {
+        igraph_integer_t ffrom, fto;
         igraph_real_t weight = 1;
         igraph_edge(graph, (igraph_integer_t) i, &ffrom, &fto);
 
