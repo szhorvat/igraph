@@ -2,7 +2,7 @@
 /* vim:set ts=4 sw=4 sts=4 et: */
 /*
    IGraph library.
-   Copyright (C) 2009-2020  Gabor Csardi <csardi.gabor@gmail.com>
+   Copyright (C) 2020  The igraph development team <igraph@igraph.org>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -238,9 +238,9 @@ int igraph_is_bigraphical(const igraph_vector_t *degrees1,
  * These conditions are valid regardless of whether multi-edges are allowed between distinct vertices.
  */
 static int igraph_i_is_graphical_undirected_multi_loops(const igraph_vector_t *degrees, igraph_bool_t *res) {
-    long sum = 0;
-    long i;
-    long n = igraph_vector_size(degrees);
+    long int sum_parity = 0; /* 0 if the degree sum is even, 1 if it is odd */
+    long int n = igraph_vector_size(degrees);
+    long int i;
 
     for (i=0; i < n; ++i) {
         long int d = VECTOR(*degrees)[i];
@@ -249,10 +249,10 @@ static int igraph_i_is_graphical_undirected_multi_loops(const igraph_vector_t *d
             *res = 0;
             return IGRAPH_SUCCESS;
         }
-        sum += d;
+        sum_parity = (sum_parity + d) & 1;
     }
 
-    *res = (sum % 2 == 0);
+    *res = (sum_parity == 0);
 
     return IGRAPH_SUCCESS;
 }
@@ -266,7 +266,7 @@ static int igraph_i_is_graphical_undirected_multi_loops(const igraph_vector_t *d
 static int igraph_i_is_graphical_undirected_loopless_multi(const igraph_vector_t *degrees, igraph_bool_t *res) {
     long int i;
     long int n = igraph_vector_size(degrees);
-    long int sum, dmax;
+    long int dsum, dmax;
 
     /* Zero-length sequences are considered graphical. */
     if (n == 0) {
@@ -274,7 +274,7 @@ static int igraph_i_is_graphical_undirected_loopless_multi(const igraph_vector_t
         return IGRAPH_SUCCESS;
     }
 
-    sum = 0; dmax = 0;
+    dsum = 0; dmax = 0;
     for (i=0; i < n; ++i) {
         long int d = VECTOR(*degrees)[i];
 
@@ -282,13 +282,13 @@ static int igraph_i_is_graphical_undirected_loopless_multi(const igraph_vector_t
             *res = 0;
             return IGRAPH_SUCCESS;
         }
-        sum += d;
+        dsum += d;
         if (d > dmax) {
             dmax = d;
         }
     }
 
-    *res = (sum % 2 == 0) && (sum >= 2*dmax);
+    *res = (dsum % 2 == 0) && (dsum >= 2*dmax);
 
     return IGRAPH_SUCCESS;
 }
@@ -380,9 +380,11 @@ static int igraph_i_is_graphical_undirected_loopy_simple(const igraph_vector_t *
 static int igraph_i_is_graphical_undirected_simple(const igraph_vector_t *degrees, igraph_bool_t *res) {
     igraph_vector_int_t num_degs; /* num_degs[d] is the # of vertices with degree d */
     const long int p = igraph_vector_size(degrees);
-    long int dmin, dmax, dsum, n;
+    long int dmin, dmax, dsum;
+    long int n; /* number of non-zero degrees */
     long int k, sum_deg, sum_ni, sum_ini;
     long int i, dk;
+    long int zverovich_bound;
 
     if (p == 0) {
         *res = 1;
@@ -390,18 +392,13 @@ static int igraph_i_is_graphical_undirected_simple(const igraph_vector_t *degree
     }
 
     /* The following implementation of the Erdős-Gallai test
-     * is a direct translation of the Python code given in
+     * is mostly a direct translation of the Python code given in
      *
      * Brian Cloteaux, Is This for Real? Fast Graphicality Testing,
      * Computing Prescriptions, pp. 91-95, vol. 17 (2015)
      * https://dx.doi.org/10.1109/MCSE.2015.125
      *
-     * It uses counting sort and a result from
-     *
-     * I. Zverovich and V. Zverovich, Contributions to the Theory of Graphic Sequences,
-     * Discrete Mathematics, vol. 105, nos. 1-3, 1992, pp. 293–303.
-     *
-     * to achieve linear runtime.
+     * It uses counting sort to achieve linear runtime.
      */
 
     IGRAPH_VECTOR_INT_INIT_FINALLY(&num_degs, p);
@@ -429,12 +426,38 @@ static int igraph_i_is_graphical_undirected_simple(const igraph_vector_t *degree
         goto finish;
     }
 
-    if (n == 0 || 4*dmin*n >= (dmax + dmin + 1) * (dmax + dmin + 1)) {
+    if (n == 0) {
+        *res = 1;
+        goto finish; /* all degrees are zero => graphical */
+    }
+
+    /* According to:
+     *
+     * G. Cairns, S. Mendan, and Y. Nikolayevsky, A sharp refinement of a result of Zverovich-Zverovich,
+     * Discrete Math. 338, 1085 (2015).
+     * https://dx.doi.org/10.1016/j.disc.2015.02.001
+     *
+     * a sufficient but not necessary condition of graphicality for a sequence of
+     * n strictly positive integers is that
+     *
+     * dmin * n >= floor( (dmax + dmin + 1)^2 / 4 ) - 1
+     * if dmin is odd or (dmax + dmin) mod 4 == 1
+     *
+     * or
+     *
+     * dmin * n >= floor( (dmax + dmin + 1)^2 / 4 )
+     * otherwise.
+     */
+
+    zverovich_bound = ((dmax + dmin + 1) * (dmax + dmin + 1)) / 4;
+    if (dmin % 2 == 1 || (dmax + dmin) % 4 == 1) {
+        zverovich_bound -= 1;
+    }
+
+    if (dmin*n >= zverovich_bound) {
         *res = 1;
         goto finish;
     }
-
-    *res = 1;
 
     k = 0; sum_deg = 0; sum_ni = 0; sum_ini = 0;
     for (dk = dmax; dk >= dmin; --dk) {
@@ -478,19 +501,15 @@ finish:
  *  - The sum of in- and out-degrees must be the same.
  */
 static int igraph_i_is_graphical_directed_loopy_multi(const igraph_vector_t *out_degrees, const igraph_vector_t *in_degrees, igraph_bool_t *res) {
-    long int i, sumout, sumin;
+    long int sumdiff; /* difference between sum of in- and out-degrees */
     long int n = igraph_vector_size(out_degrees);
+    long int i;
 
     if (igraph_vector_size(in_degrees) != n) {
         IGRAPH_ERROR("The length of out- and in-degree sequences must be the same.", IGRAPH_EINVAL);
     }
 
-    if (n == 0) {
-        *res = 1;
-        return IGRAPH_SUCCESS;
-    }
-
-    sumin = 0; sumout = 0;
+    sumdiff = 0;
     for (i=0; i < n; ++i) {
         long int dout = VECTOR(*out_degrees)[i];
         long int din  = VECTOR(*in_degrees)[i];
@@ -500,10 +519,10 @@ static int igraph_i_is_graphical_directed_loopy_multi(const igraph_vector_t *out
             return IGRAPH_SUCCESS;
         }
 
-        sumin += din; sumout += dout;
+        sumdiff += din - dout;
     }
 
-    *res = sumin == sumout;
+    *res = sumdiff == 0;
 
     return IGRAPH_SUCCESS;
 }
@@ -834,6 +853,8 @@ static int igraph_i_is_bigraphical_simple(const igraph_vector_t *degrees1, const
  * \function igraph_is_degree_sequence
  * \brief Determines whether a degree sequence is valid.
  *
+ * \deprecated-by igraph_is_graphical 0.9
+ *
  * </para><para>
  * A sequence of n integers is a valid degree sequence if there exists some
  * graph where the degree of the i-th vertex is equal to the i-th element of the
@@ -848,8 +869,6 @@ static int igraph_i_is_bigraphical_simple(const igraph_vector_t *degrees1, const
  * degree vectors are equal and whether their sums are also equal. These are
  * known sufficient and necessary conditions for a degree sequence to be
  * valid.
- *
- * \deprecated-by igraph_is_graphical 0.9
  *
  * \param out_degrees  an integer vector specifying the degree sequence for
  *     undirected graphs or the out-degree sequence for directed graphs.
@@ -910,14 +929,16 @@ int igraph_is_degree_sequence(const igraph_vector_t *out_degrees,
  * vertices of a simple graph. J SIAM Appl Math 10:496-506, 1962.
  *
  * </para><para>
- * PL Erdos, I Miklos and Z Toroczkai: A simple Havel-Hakimi type algorithm
- * to realize graphical degree sequences of directed graphs. The Electronic
- * Journal of Combinatorics 17(1):R66, 2010.
+ * PL Erdős, I Miklós and Z Toroczkai: A simple Havel-Hakimi type algorithm
+ * to realize graphical degree sequences of directed graphs.
+ * The Electronic Journal of Combinatorics 17(1):R66, 2010.
+ * https://dx.doi.org/10.1017/S0963548317000499
  *
  * </para><para>
  * Z Kiraly: Recognizing graphic degree sequences and generating all
  * realizations. TR-2011-11, Egervary Research Group, H-1117, Budapest,
  * Hungary. ISSN 1587-4451, 2012.
+ * https://www.cs.elte.hu/egres/tr/egres-11-11.pdf
  *
  * \param out_degrees  an integer vector specifying the degree sequence for
  *     undirected graphs or the out-degree sequence for directed graphs.
