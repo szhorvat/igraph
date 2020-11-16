@@ -60,18 +60,18 @@ jobs:
     - name: "Linux"
       os: linux
 
-    # - name: "Linux arm64"
-    #   os: linux
-    #   arch: arm64-graviton2 # faster than arm64
+    - name: "Linux arm64"
+      os: linux
+      arch: arm64-graviton2 # faster than arm64
 
-    # - name: "Linux ppc64"
-    #   os: linux
-    #   dist: focal # snap fails with ppc64 on earlier Ubuntu
-    #   arch: ppc64le
+    - name: "Linux ppc64"
+      os: linux
+      dist: focal # snap fails with ppc64 on earlier Ubuntu
+      arch: ppc64le
 
-    # - name: "Linux s390x"
-    #   os: linux
-    #   arch: s390x
+    - name: "Linux s390x"
+      os: linux
+      arch: s390x
 
     - name: "Alpine Linux (chroot)"
       os: linux
