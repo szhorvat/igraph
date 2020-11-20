@@ -120,6 +120,19 @@ jobs:
                    -DUSE_SANITIZER=Address\;Undefined
                    -DCMAKE_C_FLAGS="-g -Og" -DCMAKE_CXX_FLAGS="-g -Og"
 
+    - name: "Windows"
+      os: windows
+      install:
+        - choco install winflexbison3
+      before_script:
+        - mkdir build
+        - cd build
+        - cmake .. -DIGRAPH_USE_INTERNAL_BLAS=1 -DIGRAPH_USE_INTERNAL_LAPACK=1 -DIGRAPH_USE_INTERNAL_ARPACK=1 -DIGRAPH_USE_INTERNAL_GLPK=1 -DIGRAPH_USE_INTERNAL_CXSPARSE=1
+      script:
+          - cmake --build . --target build_tests --config Release
+          - ctest --output-on-failure -C Release
+
+
     - name: "Documentation"
       language: shell
       os: linux
