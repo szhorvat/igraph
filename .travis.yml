@@ -127,7 +127,9 @@ jobs:
       before_script:
         - mkdir build
         - cd build
-        - cmake .. -DIGRAPH_USE_INTERNAL_BLAS=1 -DIGRAPH_USE_INTERNAL_LAPACK=1 -DIGRAPH_USE_INTERNAL_ARPACK=1 -DIGRAPH_USE_INTERNAL_GLPK=1 -DIGRAPH_USE_INTERNAL_CXSPARSE=1
+        - cmake .. 
+            -G "Visual Studio 15 2017" -A x64
+            -DIGRAPH_USE_INTERNAL_BLAS=1 -DIGRAPH_USE_INTERNAL_LAPACK=1 -DIGRAPH_USE_INTERNAL_ARPACK=1 -DIGRAPH_USE_INTERNAL_GLPK=1 -DIGRAPH_USE_INTERNAL_CXSPARSE=1
       script:
           - cmake --build . --target build_tests --config Release
           - ctest --output-on-failure -C Release
