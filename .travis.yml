@@ -68,6 +68,7 @@ jobs:
         - make
     - name: "macOS"
       os: osx
+      osx_image: xcode12.2
       install:
         - ./bootstrap.sh
         - ./configure --enable-verify-finally --enable-asan --with-external-glpk 
