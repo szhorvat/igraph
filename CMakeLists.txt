@@ -6,6 +6,9 @@ cmake_minimum_required(VERSION 3.16)
 # Add etc/cmake to CMake's search path so we can put our private stuff there
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/etc/cmake)
 
+# Prevent in-source builds
+include(PreventInSourceBuilds)
+
 # Make use of ccache if it is present on the host system
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)
@@ -74,6 +77,22 @@ include(tls)
 
 # Check for link-time optimization
 include(lto)
+
+# Check for code coverage support
+option(IGRAPH_ENABLE_CODE_COVERAGE "Enable code coverage calculation" OFF)
+if(IGRAPH_ENABLE_CODE_COVERAGE)
+  include(CodeCoverage)
+  append_coverage_compiler_flags()
+  setup_target_for_coverage_lcov(
+    NAME coverage
+    EXECUTABLE "${CMAKE_COMMAND}" "--build" "${CMAKE_BINARY_DIR}" "--target" "check"
+    # Generated files are excluded; apparently the CodeCoverage script has some
+	# problems with them. Yes, the exclusion is correct, it refers to a nonexistent
+	# directory that somehow gets into the coverage resolts. /Applications is for
+	# macOS -- it excludes files from the macOS SDK.
+	EXCLUDE "parsers/*" "/Applications/Xcode*" "examples/*"
+  )
+endif()
 
 # Generate configuration headers
 configure_file(
