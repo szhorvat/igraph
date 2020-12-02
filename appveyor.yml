@@ -9,7 +9,7 @@ environment:
 
     matrix:
         - job_name: Static
-        - job_name: Static (external deps)
+        # - job_name: Static (external deps)
         - job_name: Dynamic
 
 cache:
@@ -28,14 +28,14 @@ install:
     # Update vcpkg, as included version does not have GMP
     # https://www.appveyor.com/docs/lang/cpp/#vc-packaging-tool
     - cd C:\Tools\vcpkg
-    - git pull --quiet
-    - .\bootstrap-vcpkg.bat -disableMetrics
-    - vcpkg install yasm-tool:x86-windows
-    - vcpkg install gmp
+    # - git pull --quiet
+    # - .\bootstrap-vcpkg.bat -disableMetrics
+    # - vcpkg install yasm-tool:x86-windows
+    # - vcpkg install gmp
     - vcpkg install libxml2
-    - vcpkg install openblas
-    - vcpkg install suitesparse
-    - vcpkg integrate install
+    # - vcpkg install openblas
+    # - vcpkg install suitesparse
+    # - vcpkg integrate install
 
 for:
     - matrix:
@@ -53,20 +53,20 @@ for:
             -DIGRAPH_USE_INTERNAL_BLAS=1 -DIGRAPH_USE_INTERNAL_LAPACK=1 -DIGRAPH_USE_INTERNAL_ARPACK=1 -DIGRAPH_USE_INTERNAL_GLPK=1 -DIGRAPH_USE_INTERNAL_CXSPARSE=1 -DIGRAPH_USE_INTERNAL_GMP=1
             -DIGRAPH_VERIFY_FINALLY_STACK=1
 
-    - matrix:
-        only:
-            - job_name: Static (external deps)
-      before_build:
-        - cd "%APPVEYOR_BUILD_FOLDER%"
-        - mkdir build
-        - cd build
-        - cmake ..
-            -A x64
-            -DCMAKE_TOOLCHAIN_FILE=C:/Tools/vcpkg/scripts/buildsystems/vcpkg.cmake
-            -DVCPKG_TARGET_TRIPLET=x64-windows-static
-            -DIGRAPH_GRAPHML_SUPPORT=1
-            -DIGRAPH_USE_INTERNAL_BLAS=0 -DIGRAPH_USE_INTERNAL_LAPACK=0 -DIGRAPH_USE_INTERNAL_ARPACK=1 -DIGRAPH_USE_INTERNAL_GLPK=1 -DIGRAPH_USE_INTERNAL_CXSPARSE=0 -DIGRAPH_USE_INTERNAL_GMP=0
-            -DIGRAPH_VERIFY_FINALLY_STACK=1            
+    # - matrix:
+    #     only:
+    #         - job_name: Static (external deps)
+    #   before_build:
+    #     - cd "%APPVEYOR_BUILD_FOLDER%"
+    #     - mkdir build
+    #     - cd build
+    #     - cmake ..
+    #         -A x64
+    #         -DCMAKE_TOOLCHAIN_FILE=C:/Tools/vcpkg/scripts/buildsystems/vcpkg.cmake
+    #         -DVCPKG_TARGET_TRIPLET=x64-windows-static
+    #         -DIGRAPH_GRAPHML_SUPPORT=1
+    #         -DIGRAPH_USE_INTERNAL_BLAS=0 -DIGRAPH_USE_INTERNAL_LAPACK=0 -DIGRAPH_USE_INTERNAL_ARPACK=1 -DIGRAPH_USE_INTERNAL_GLPK=1 -DIGRAPH_USE_INTERNAL_CXSPARSE=0 -DIGRAPH_USE_INTERNAL_GMP=0
+    #         -DIGRAPH_VERIFY_FINALLY_STACK=1            
 
     - matrix:
         only:
