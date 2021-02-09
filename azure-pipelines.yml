@@ -3,7 +3,6 @@ pool:
 
 variables:
   CMAKE_GENERATOR: Ninja
-  CMAKE_CONFIG_TYPE: Debug
   CCACHE_DIR: $(Pipeline.Workspace)/ccache
 
 jobs:
