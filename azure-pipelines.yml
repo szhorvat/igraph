@@ -77,14 +77,13 @@ jobs:
        vmImage: windows-2019
 
     variables:
-      CMAKE_GENERATOR: Visual Studio 14 2015
+      CMAKE_GENERATOR: Ninja
+      CXX: cl.exe
+      CC: cl.exe
 
     steps:
-      - script: choco install winflexbison3
+      - script: choco install winflexbison3 ninja
         displayName: Install dependencies
-
-      - script: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64 -vcvars_ver=14.0
 
       - template: .azure/build.yml
         parameters:
@@ -96,14 +95,13 @@ jobs:
        vmImage: windows-2019
 
     variables:
-      CMAKE_GENERATOR: Visual Studio 14 2015
+      CMAKE_GENERATOR: Ninja
+      CXX: cl.exe
+      CC: cl.exe
 
     steps:
-      - script: choco install winflexbison3
+      - script: choco install winflexbison3 ninja
         displayName: Install dependencies
-
-      - script: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64 -vcvars_ver=14.0
 
       - template: .azure/build.yml
         parameters:
