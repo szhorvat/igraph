@@ -3,6 +3,7 @@ pool:
 
 variables:
   CMAKE_GENERATOR: Ninja
+  CMAKE_BUILD_TYPE: Debug
   CCACHE_DIR: $(Pipeline.Workspace)/ccache
 
 jobs:
@@ -13,7 +14,7 @@ jobs:
 
       - template: .azure/build.yml
         parameters:
-          extra_cmake_args: '-DUSE_SANITIZER=Address\;Undefined -DCMAKE_C_FLAGS="-g -Og" -DCMAKE_CXX_FLAGS="-g -Og'
+          extra_cmake_args: '-DUSE_SANITIZER=Address\;Undefined -DCMAKE_C_FLAGS="-Og" -DCMAKE_CXX_FLAGS="-Og'
 
   - job: linux_static_external
     steps:
@@ -76,30 +77,14 @@ jobs:
     pool:
        vmImage: windows-2019
 
-    variables:
-      CMAKE_GENERATOR: Ninja
-      CXX: cl.exe
-      CC: cl.exe
-
     steps:
-      - script: choco install winflexbison3 ninja
-        displayName: Install dependencies
-
       - template: .azure/build-win.yml
 
   - job: windows_shared
     pool:
        vmImage: windows-2019
 
-    variables:
-      CMAKE_GENERATOR: Ninja
-      CXX: cl.exe
-      CC: cl.exe
-
     steps:
-      - script: choco install winflexbison3 ninja
-        displayName: Install dependencies
-
       - template: .azure/build-win.yml
         parameters:
           build_shared: true
