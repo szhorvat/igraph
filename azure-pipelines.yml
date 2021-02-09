@@ -85,10 +85,7 @@ jobs:
       - script: choco install winflexbison3 ninja
         displayName: Install dependencies
 
-      - template: .azure/build.yml
-        parameters:
-          extra_ctest_args: -C Debug
-          use_ccache: false
+      - template: .azure/build-win.yml
 
   - job: windows_shared
     pool:
@@ -103,11 +100,9 @@ jobs:
       - script: choco install winflexbison3 ninja
         displayName: Install dependencies
 
-      - template: .azure/build.yml
+      - template: .azure/build-win.yml
         parameters:
           build_shared: true
-          extra_ctest_args: -C Debug
-          use_ccache: false
 
   - job: documentation
     steps:
