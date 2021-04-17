@@ -50,6 +50,8 @@ jobs:
         run: cmake --build . --target build_tests
         working-directory: build-${{ matrix.arch }}
       - name: Test
+        env:
+          OPENBLAS_NUM_THREADS=1
         run: ctest -j $(nproc) --output-on-failure --timeout 180
         working-directory: build-${{ matrix.arch }}
 
