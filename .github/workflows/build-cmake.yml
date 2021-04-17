@@ -51,7 +51,7 @@ jobs:
         working-directory: build-${{ matrix.arch }}
       - name: Test
         env:
-          OPENBLAS_NUM_THREADS: 1
+          OPENBLAS_NUM_THREADS: 2
         run: ctest -j $(nproc) --output-on-failure --timeout 180
         working-directory: build-${{ matrix.arch }}
 
