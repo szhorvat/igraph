@@ -46,10 +46,6 @@
 #include <string.h>
 #include <math.h>
 
-#ifdef USING_R
-    #include <R.h>
-#endif
-
 /**
  * \function igraph_community_to_membership
  * \brief Create membership vector from community structure dendrogram
@@ -269,6 +265,11 @@ int igraph_reindex_membership(igraph_vector_t *membership,
     i_nb_clusters = 1;
     for (i = 0; i < n; i++) {
         long int c = (long int)VECTOR(*membership)[i];
+
+        if (c < 0) {
+            IGRAPH_ERRORF("Membership indices should be non-negative. "
+            "Found member of cluster %ld.", IGRAPH_EINVAL, c);
+        }
 
         if (c >= n) {
             IGRAPH_ERRORF("Membership indices should be less than total number of vertices. "

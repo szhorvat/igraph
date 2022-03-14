@@ -159,7 +159,7 @@ int igraph_star(igraph_t *graph, igraph_integer_t n, igraph_star_mode_t mode,
  *        same as the length of this vector.
  * \param nei Integer value giving the distance (number of steps)
  *        within which two vertices will be connected.
- * \param directed Boolean, whether to create a directed graph. 
+ * \param directed Boolean, whether to create a directed graph.
  *        If the \c mutual and \c circular arguments are not set to true,
  *        edges will be directed from lower-index vertices towards
  *        higher-index ones.
@@ -279,23 +279,30 @@ int igraph_lattice(igraph_t *graph, const igraph_vector_t *dimvector,
 /**
  * \ingroup generators
  * \function igraph_ring
- * \brief Creates a \em ring graph, a one dimensional lattice.
+ * \brief Creates a \em cycle graph or a \em path graph.
  *
- * An undirected (circular) ring on n vertices is commonly known in graph
- * theory as the cycle graph C_n.
+ * A circular ring on \c n vertices is commonly known in graph
+ * theory as the cycle graph, and often denoted by <code>C_n</code>.
+ * Removing a single edge from the cycle graph <code>C_n</code> results
+ * in the path graph <code>P_n</code>. This function can generate both.
+ *
+ * </para><para>
+ * This function is a convenience wrapper for the one-dimensional case of
+ * \ref igraph_lattice().
  *
  * \param graph Pointer to an uninitialized graph object.
- * \param n The number of vertices in the ring.
- * \param directed Logical, whether to create a directed ring.
- * \param mutual Logical, whether to create mutual edges in a directed
- *        ring. It is ignored for undirected graphs.
- * \param circular Logical, if false, the ring will be open (this is
- *        not a real \em ring actually).
+ * \param n The number of vertices in the graph.
+ * \param directed Logical, whether to create a directed graph.
+ *        All edges will be oriented in the same direction along
+ *        the cycle or path.
+ * \param mutual Logical, whether to create mutual edges in directed
+ *        graphs. It is ignored for undirected graphs.
+ * \param circular Logical, whether to create a closed ring (a cycle)
+ *        or an open path.
  * \return Error code:
  *         \c IGRAPH_EINVAL: invalid number of vertices.
  *
- * Time complexity: O(|V|), the
- * number of vertices in the graph.
+ * Time complexity: O(|V|), the number of vertices in the graph.
  *
  * \sa \ref igraph_lattice() for generating more general lattices.
  *
@@ -307,23 +314,34 @@ int igraph_ring(igraph_t *graph, igraph_integer_t n, igraph_bool_t directed,
     igraph_vector_t v = IGRAPH_VECTOR_NULL;
 
     if (n < 0) {
-        IGRAPH_ERROR("negative number of vertices", IGRAPH_EINVAL);
+        IGRAPH_ERRORF("The number of vertices must be non-negative, got %" IGRAPH_PRId ".", IGRAPH_EINVAL, n);
     }
 
     IGRAPH_VECTOR_INIT_FINALLY(&v, 1);
     VECTOR(v)[0] = n;
 
     IGRAPH_CHECK(igraph_lattice(graph, &v, 1, directed, mutual, circular));
-    igraph_vector_destroy(&v);
 
+    igraph_vector_destroy(&v);
     IGRAPH_FINALLY_CLEAN(1);
-    return 0;
+
+    return IGRAPH_SUCCESS;
 }
 
 /**
  * \ingroup generators
  * \function igraph_tree
  * \brief Creates a tree in which almost all vertices have the same number of children.
+ *
+ * To obtain a completely symmetric tree with \c l layers, where each
+ * vertex has precisely \p children descendants, use
+ * <code>n = (children^(l+1) - 1) / (children - 1)</code>.
+ * Such trees are often called <code>k</code>-ary trees, where \c k refers
+ * to the number of children.
+ *
+ * </para><para>
+ * Note that for <code>n=0</code>, the null graph is returned,
+ * which is not considered to be a tree by \ref igraph_is_tree().
  *
  * \param graph Pointer to an uninitialized graph object.
  * \param n Integer, the number of vertices in the graph.
@@ -362,15 +380,18 @@ int igraph_tree(igraph_t *graph, igraph_integer_t n, igraph_integer_t children,
     long int idx = 0;
     long int to = 1;
 
-    if (n < 0 || children <= 0) {
-        IGRAPH_ERROR("Invalid number of vertices or children", IGRAPH_EINVAL);
+    if (n < 0) {
+        IGRAPH_ERROR("Number of vertices cannot be negative.", IGRAPH_EINVAL);
+    }
+    if (children <= 0) {
+        IGRAPH_ERROR("Number of children must be positive.", IGRAPH_EINVAL);
     }
     if (type != IGRAPH_TREE_OUT && type != IGRAPH_TREE_IN &&
         type != IGRAPH_TREE_UNDIRECTED) {
-        IGRAPH_ERROR("Invalid mode argument", IGRAPH_EINVMODE);
+        IGRAPH_ERROR("Invalid tree orientation type.", IGRAPH_EINVMODE);
     }
 
-    IGRAPH_VECTOR_INIT_FINALLY(&edges, 2 * (n - 1));
+    IGRAPH_VECTOR_INIT_FINALLY(&edges, n > 0 ? 2 * (n - 1) : 0);
 
     i = 0;
     if (type == IGRAPH_TREE_OUT) {

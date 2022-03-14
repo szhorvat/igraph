@@ -34,6 +34,7 @@
 #include "igraph_vector.h"
 
 #include "core/interruption.h"
+#include "operators/subgraph.h"
 
 #include <limits.h>
 
@@ -327,13 +328,19 @@ static int igraph_i_clusters_strong(const igraph_t *graph, igraph_vector_t *memb
     return 0;
 }
 
-int igraph_is_connected_weak(const igraph_t *graph, igraph_bool_t *res);
+static int igraph_is_connected_weak(const igraph_t *graph, igraph_bool_t *res);
 
 /**
  * \ingroup structural
  * \function igraph_is_connected
  * \brief Decides whether the graph is (weakly or strongly) connected.
  *
+ * A graph is considered connected when any of its vertices is reachable
+ * from any other. A directed graph with this property is called
+ * \em strongly connected. A directed graph that would be connected when
+ * ignoring the directions of its edges is called \em weakly connected.
+ *
+ * </para><para>
  * A graph with zero vertices (i.e. the null graph) is \em not connected by
  * definition. This behaviour changed in igraph 0.9; earlier versions assumed
  * that the null graph is connected. See the following issue on Github for the
@@ -358,10 +365,18 @@ int igraph_is_connected_weak(const igraph_t *graph, igraph_bool_t *res);
 
 int igraph_is_connected(const igraph_t *graph, igraph_bool_t *res,
                         igraph_connectedness_t mode) {
-    if (igraph_vcount(graph) == 0) {
+
+    long int no_of_nodes = igraph_vcount(graph);
+
+    if (no_of_nodes == 0) {
         /* Changed in igraph 0.9; see https://github.com/igraph/igraph/issues/1538
          * for the reasoning behind the change */
         *res = 0;
+        return IGRAPH_SUCCESS;
+    }
+
+    if (no_of_nodes == 1) {
+        *res = 1;
         return IGRAPH_SUCCESS;
     }
 
@@ -370,50 +385,46 @@ int igraph_is_connected(const igraph_t *graph, igraph_bool_t *res,
     } else if (mode == IGRAPH_STRONG) {
         int retval;
         igraph_integer_t no;
-        retval = igraph_i_clusters_strong(graph, 0, 0, &no);
+
+        /* A strongly connected graph has at least as many edges as vertices,
+         * except for the singleton graph, which is handled above. */
+        if (igraph_ecount(graph) < no_of_nodes) {
+            *res = 0;
+            return IGRAPH_SUCCESS;
+        }
+
+        retval = igraph_i_clusters_strong(graph, NULL, NULL, &no);
         *res = (no == 1);
         return retval;
     }
 
-    IGRAPH_ERROR("mode argument", IGRAPH_EINVAL);
+    IGRAPH_ERROR("Invalid connectedness mode.", IGRAPH_EINVAL);
 }
 
-/**
- * \ingroup structural
- * \function igraph_is_connected_weak
- * \brief Query whether the graph is weakly connected.
- *
- * A graph with zero vertices (i.e. the null graph) is weakly connected by
- * definition. A directed graph is weakly connected if its undirected version
- * is connected. In the case of undirected graphs, weakly connected and
- * connected are equivalent.
- *
- * \param graph The graph object to analyze.
- * \param res Pointer to a logical variable; the result will be stored here.
- * \return Error code:
- *        \c IGRAPH_ENOMEM: unable to allocate requested memory.
- *
- * Time complexity: O(|V|+|E|), the number of vertices plus the number of
- * edges in the graph.
- */
+static int igraph_is_connected_weak(const igraph_t *graph, igraph_bool_t *res) {
 
-int igraph_is_connected_weak(const igraph_t *graph, igraph_bool_t *res) {
-
-    long int no_of_nodes = igraph_vcount(graph);
+    long int no_of_nodes = igraph_vcount(graph), no_of_edges = igraph_ecount(graph);
+    long int added_count;
     char *already_added;
     igraph_vector_t neis = IGRAPH_VECTOR_NULL;
     igraph_dqueue_t q = IGRAPH_DQUEUE_NULL;
 
-    long int i, j;
-
+    /* By convention, the null graph is not considered connected.
+     * See https://github.com/igraph/igraph/issues/1538 */
     if (no_of_nodes == 0) {
-        *res = 1;
+        *res = 0;
+        return IGRAPH_SUCCESS;
+    }
+
+    /* A connected graph has at least |V| - 1 edges. */
+    if (no_of_edges < no_of_nodes - 1) {
+        *res = 0;
         return IGRAPH_SUCCESS;
     }
 
     already_added = IGRAPH_CALLOC(no_of_nodes, char);
     if (already_added == 0) {
-        IGRAPH_ERROR("is connected (weak) failed", IGRAPH_ENOMEM);
+        IGRAPH_ERROR("Weak connectedness check failed.", IGRAPH_ENOMEM);
     }
     IGRAPH_FINALLY(igraph_free, already_added);
 
@@ -424,37 +435,53 @@ int igraph_is_connected_weak(const igraph_t *graph, igraph_bool_t *res) {
     already_added[0] = 1;
     IGRAPH_CHECK(igraph_dqueue_push(&q, 0));
 
-    j = 1;
+    added_count = 1;
     while ( !igraph_dqueue_empty(&q)) {
-        long int actnode = (long int) igraph_dqueue_pop(&q);
         IGRAPH_ALLOW_INTERRUPTION();
-        IGRAPH_CHECK(igraph_neighbors(graph, &neis, (igraph_integer_t) actnode,
-                                      IGRAPH_ALL));
-        for (i = 0; i < igraph_vector_size(&neis); i++) {
+
+        long int actnode = (long int) igraph_dqueue_pop(&q);
+
+        IGRAPH_CHECK(igraph_neighbors(graph, &neis, (igraph_integer_t) actnode, IGRAPH_ALL));
+        long int nei_count = igraph_vector_size(&neis);
+
+        for (long int i = 0; i < nei_count; i++) {
             long int neighbor = (long int) VECTOR(neis)[i];
-            if (already_added[neighbor] != 0) {
+            if (already_added[neighbor]) {
                 continue;
             }
+
             IGRAPH_CHECK(igraph_dqueue_push(&q, neighbor));
-            j++;
-            already_added[neighbor]++;
+            added_count++;
+            already_added[neighbor] = 1;
+
+            if (added_count == no_of_nodes) {
+                /* We have already reached all nodes: the graph is connected.
+                 * We can stop the traversal now. */
+                igraph_dqueue_clear(&q);
+                break;
+            }
         }
     }
 
     /* Connected? */
-    *res = (j == no_of_nodes);
+    *res = (added_count == no_of_nodes);
 
     IGRAPH_FREE(already_added);
     igraph_dqueue_destroy(&q);
     igraph_vector_destroy(&neis);
     IGRAPH_FINALLY_CLEAN(3);
 
-    return 0;
+    return IGRAPH_SUCCESS;
 }
 
 /**
  * \function igraph_decompose_destroy
  * \brief Free the memory allocated by \ref igraph_decompose().
+ *
+ * This function destroys and frees all <type>igraph_t</type>
+ * objects held in \p complist. However, it does not destroy
+ * \p complist itself, as it was not allocated by \ref igraph_decompose().
+ * Use \ref igraph_vector_ptr_destroy() to destroy \p complist.
  *
  * \param complist The list of graph components, as returned by
  *        \ref igraph_decompose().
@@ -539,6 +566,7 @@ static int igraph_i_decompose_weak(const igraph_t *graph,
     igraph_dqueue_t q;
     igraph_vector_t verts;
     igraph_vector_t neis;
+    igraph_vector_t vids_old2new;
     long int i;
     igraph_t *newg;
 
@@ -561,6 +589,11 @@ static int igraph_i_decompose_weak(const igraph_t *graph,
     IGRAPH_FINALLY(igraph_dqueue_destroy, &q);
     IGRAPH_VECTOR_INIT_FINALLY(&verts, 0);
     IGRAPH_VECTOR_INIT_FINALLY(&neis, 0);
+    IGRAPH_VECTOR_INIT_FINALLY(&vids_old2new, no_of_nodes);
+
+    /* vids_old2new would have been created internally in igraph_induced_subgraph(),
+       but it is slow if the graph is large and consists of many small components,
+       so we create it once here and then re-use it */
 
     /* add a node and its neighbors at once, recursively
        then switch to next node that has not been added already */
@@ -609,18 +642,26 @@ static int igraph_i_decompose_weak(const igraph_t *graph,
             IGRAPH_ERROR("Cannot decompose graph", IGRAPH_ENOMEM);
         }
         IGRAPH_CHECK(igraph_vector_ptr_push_back(components, newg));
-        IGRAPH_CHECK(igraph_induced_subgraph(graph, newg,
-                                             igraph_vss_vector(&verts),
-                                             IGRAPH_SUBGRAPH_AUTO));
+        IGRAPH_CHECK(igraph_i_induced_subgraph_map(
+            graph, newg, igraph_vss_vector(&verts),
+            IGRAPH_SUBGRAPH_AUTO, &vids_old2new,
+            /* invmap = */ 0, /* map_is_prepared = */ 1
+        ));
         resco++;
+
+        /* vids_old2new does not have to be cleaned up here; since we are doing
+         * weak decomposition, each vertex will appear in only one of the
+         * connected components so we won't ever touch an item in vids_old2new
+         * if it was already set to a non-zero value in a previous component */
 
     } /* for actstart++ */
 
+    igraph_vector_destroy(&vids_old2new);
     igraph_vector_destroy(&neis);
     igraph_vector_destroy(&verts);
     igraph_dqueue_destroy(&q);
     IGRAPH_FREE(already_added);
-    IGRAPH_FINALLY_CLEAN(5);  /* + components */
+    IGRAPH_FINALLY_CLEAN(6);  /* + components */
 
     return 0;
 }
@@ -647,6 +688,7 @@ static int igraph_i_decompose_strong(const igraph_t *graph,
 
     igraph_adjlist_t adjlist;
     igraph_vector_t verts;
+    igraph_vector_t vids_old2new;
     igraph_t *newg;
 
     if (maxcompno < 0) {
@@ -658,6 +700,7 @@ static int igraph_i_decompose_strong(const igraph_t *graph,
 
     /* The result */
 
+    IGRAPH_VECTOR_INIT_FINALLY(&vids_old2new, no_of_nodes);
     IGRAPH_VECTOR_INIT_FINALLY(&verts, 0);
     IGRAPH_VECTOR_INIT_FINALLY(&next_nei, no_of_nodes);
     IGRAPH_VECTOR_INIT_FINALLY(&out, 0);
@@ -669,6 +712,10 @@ static int igraph_i_decompose_strong(const igraph_t *graph,
 
     IGRAPH_CHECK(igraph_adjlist_init(graph, &adjlist, IGRAPH_OUT, IGRAPH_LOOPS_ONCE, IGRAPH_MULTIPLE));
     IGRAPH_FINALLY(igraph_adjlist_destroy, &adjlist);
+
+    /* vids_old2new would have been created internally in igraph_induced_subgraph(),
+       but it is slow if the graph is large and consists of many small components,
+       so we create it once here and then re-use it */
 
     /* number of components seen */
     num_seen = 0;
@@ -809,9 +856,21 @@ static int igraph_i_decompose_strong(const igraph_t *graph,
             IGRAPH_ERROR("Cannot decompose graph", IGRAPH_ENOMEM);
         }
         IGRAPH_CHECK(igraph_vector_ptr_push_back(components, newg));
-        IGRAPH_CHECK(igraph_induced_subgraph(graph, newg,
-                                             igraph_vss_vector(&verts),
-                                             IGRAPH_SUBGRAPH_AUTO));
+        IGRAPH_CHECK(igraph_i_induced_subgraph_map(
+            graph, newg, igraph_vss_vector(&verts),
+            IGRAPH_SUBGRAPH_AUTO, &vids_old2new,
+            /* invmap = */ 0, /* map_is_prepared = */ 1
+        ));
+
+        /* vids_old2new has to be cleaned up here because a vertex may appear
+         * in multiple strongly connected components. Simply calling
+         * igraph_vector_fill() would be an O(n) operation where n is the number
+         * of vertices in the large graph so we cannot do that; we have to
+         * iterate over 'verts' instead */
+        n = igraph_vector_size(&verts);
+        for (i = 0; i < n; i++) {
+            VECTOR(vids_old2new)[(igraph_integer_t) VECTOR(verts)[i]] = 0;
+        }
 
         no_of_clusters++;
     }
@@ -820,12 +879,13 @@ static int igraph_i_decompose_strong(const igraph_t *graph,
 
     /* Clean up, return */
 
+    igraph_vector_destroy(&vids_old2new);
     igraph_vector_destroy(&verts);
     igraph_adjlist_destroy(&adjlist);
     igraph_vector_destroy(&out);
     igraph_dqueue_destroy(&q);
     igraph_vector_destroy(&next_nei);
-    IGRAPH_FINALLY_CLEAN(6);  /* + components */
+    IGRAPH_FINALLY_CLEAN(7);  /* + components */
 
     return 0;
 

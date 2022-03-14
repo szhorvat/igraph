@@ -1,45 +1,45 @@
-/* 
+/*
    IGraph library.
    Copyright (C) 2009-2012  Gabor Csardi <csardi.gabor@gmail.com>
    334 Harvard st, Cambridge, MA, 02138 USA
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc.,  51 Franklin Street, Fifth Floor, Boston, MA 
+   Foundation, Inc.,  51 Franklin Street, Fifth Floor, Boston, MA
    02110-1301 USA
 
 */
 
 %{
 
-/* 
+/*
    IGraph library.
    Copyright (C) 2009-2012  Gabor Csardi <csardi.gabor@gmail.com>
    334 Harvard st, Cambridge, MA, 02138 USA
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc.,  51 Franklin Street, Fifth Floor, Boston, MA 
+   Foundation, Inc.,  51 Franklin Street, Fifth Floor, Boston, MA
    02110-1301 USA
 
 */
@@ -54,20 +54,20 @@
 
 #include <stdio.h>
 
-int igraph_dl_yyerror(YYLTYPE* locp, igraph_i_dl_parsedata_t* context, 
-		      const char *s);
-int igraph_i_dl_add_str(char *newstr, int length, 
-			igraph_i_dl_parsedata_t *context);
+int igraph_dl_yyerror(YYLTYPE* locp, igraph_i_dl_parsedata_t* context,
+                      const char *s);
+int igraph_i_dl_add_str(char *newstr, int length,
+                        igraph_i_dl_parsedata_t *context);
 int igraph_i_dl_add_edge(long int from, long int to,
-			 igraph_i_dl_parsedata_t *context);
-int igraph_i_dl_add_edge_w(long int from, long int to, 
-			   igraph_real_t weight,
-			   igraph_i_dl_parsedata_t *context);
+                         igraph_i_dl_parsedata_t *context);
+int igraph_i_dl_add_edge_w(long int from, long int to,
+                           igraph_real_t weight,
+                           igraph_i_dl_parsedata_t *context);
 
 extern igraph_real_t igraph_pajek_get_number(const char *str, long int len);
 
 #define scanner context->scanner
- 
+
 %}
 
 %pure-parser
@@ -114,7 +114,7 @@ eof: | EOFF;
 rest:    formfullmatrix { context->type=IGRAPH_DL_MATRIX; }
       |  edgelist1      { context->type=IGRAPH_DL_EDGELIST1; }
       |  nodelist1      { context->type=IGRAPH_DL_NODELIST1; }
-; 
+;
 
 formfullmatrix:  FORMATFULLMATRIX newline fullmatrix {} | fullmatrix {} ;
 
@@ -125,11 +125,11 @@ fullmatrix:   DATA newline fullmatrixdata { }
             | LABELSEMBEDDED newline DATA newline labeledfullmatrixdata { }
 ;
 
-labels: 	    {}		/* nothing, empty matrix */
-            | labels newline LABEL { 
-	      igraph_i_dl_add_str(igraph_dl_yyget_text(scanner), 
-                                  igraph_dl_yyget_leng(scanner), 
-				  context); }
+labels:       {} /* nothing, empty matrix */
+            | labels newline LABEL {
+              igraph_i_dl_add_str(igraph_dl_yyget_text(scanner),
+                                  igraph_dl_yyget_leng(scanner),
+                                  context); }
 ;
 
 fullmatrixdata: {} | fullmatrixdata zerooneseq NEWLINE {
@@ -141,10 +141,10 @@ zerooneseq: | zerooneseq zeroone { } ;
 
 zeroone: DIGIT {
   if (igraph_dl_yyget_text(scanner)[0]=='1') {
-    IGRAPH_CHECK(igraph_vector_push_back(&context->edges, 
-					 context->from));
-    IGRAPH_CHECK(igraph_vector_push_back(&context->edges, 
-					 context->to));
+    IGRAPH_CHECK(igraph_vector_push_back(&context->edges,
+                                         context->from));
+    IGRAPH_CHECK(igraph_vector_push_back(&context->edges,
+                                         context->to));
   }
   context->to += 1;
 } ;
@@ -155,17 +155,17 @@ reallabeledfullmatrixdata: labelseq NEWLINE labeledmatrixlines {} ;
 
 labelseq: | labelseq newline label ;
 
-label: LABEL { igraph_i_dl_add_str(igraph_dl_yyget_text(scanner), 
-                                   igraph_dl_yyget_leng(scanner), 
-				   context); };
+label: LABEL { igraph_i_dl_add_str(igraph_dl_yyget_text(scanner),
+                                   igraph_dl_yyget_leng(scanner),
+                                   context); };
 
 labeledmatrixlines: labeledmatrixline {
-	         context->from += 1; 
-		 context->to = 0;
-               } 
-             | labeledmatrixlines labeledmatrixline { 
-	         context->from += 1; 
-		 context->to = 0;
+                 context->from += 1;
+                 context->to = 0;
+               }
+             | labeledmatrixlines labeledmatrixline {
+                 context->from += 1;
+                 context->to = 0;
                };
 
 labeledmatrixline: LABEL zerooneseq NEWLINE { } ;
@@ -181,31 +181,31 @@ edgelist1rest:   DATA newline edgelist1data {}
              | LABELSEMBEDDED newline LABELS newline labels newline DATA newline labelededgelist1data {}
 ;
 
-edgelist1data: 		{}	/* nothing, empty graph */
+edgelist1data: {} /* nothing, empty graph */
              | edgelist1data edgelist1dataline {}
 ;
 
 edgelist1dataline: integer integer weight NEWLINE {
                    igraph_i_dl_add_edge_w($1-1, $2-1, $3, context); }
                  | integer integer NEWLINE {
-		   igraph_i_dl_add_edge($1-1, $2-1, context);
+                   igraph_i_dl_add_edge($1-1, $2-1, context);
 } ;
 
-integer: NUM { $$=igraph_pajek_get_number(igraph_dl_yyget_text(scanner), 
-					  igraph_dl_yyget_leng(scanner)); };
+integer: NUM { $$=igraph_pajek_get_number(igraph_dl_yyget_text(scanner),
+                                          igraph_dl_yyget_leng(scanner)); };
 
-labelededgelist1data: 	{}	/* nothing, empty graph */
-             | labelededgelist1data labelededgelist1dataline {}
+labelededgelist1data: {} /* nothing, empty graph */
+                    | labelededgelist1data labelededgelist1dataline {}
 ;
 
 labelededgelist1dataline: elabel elabel weight NEWLINE {
                           igraph_i_dl_add_edge_w($1, $2, $3, context); }
                         | elabel elabel NEWLINE {
-			  igraph_i_dl_add_edge($1, $2, context);
+                          igraph_i_dl_add_edge($1, $2, context);
  };
 
-weight: NUM { $$=igraph_pajek_get_number(igraph_dl_yyget_text(scanner), 
-					 igraph_dl_yyget_leng(scanner)); };
+weight: NUM { $$=igraph_pajek_get_number(igraph_dl_yyget_text(scanner),
+                                         igraph_dl_yyget_leng(scanner)); };
 
 elabel: LABEL {
   /* Copy label list to trie, if needed */
@@ -213,12 +213,12 @@ elabel: LABEL {
     long int i, id, n=igraph_strvector_size(&context->labels);
     for (i=0; i<n; i++) {
       igraph_trie_get(&context->trie,
-		      STR(context->labels, i), &id);
+                      STR(context->labels, i), &id);
     }
     igraph_strvector_clear(&context->labels);
   }
-  igraph_trie_get2(&context->trie, igraph_dl_yyget_text(scanner), 
-		   igraph_dl_yyget_leng(scanner), &$$);
+  igraph_trie_get2(&context->trie, igraph_dl_yyget_text(scanner),
+                   igraph_dl_yyget_leng(scanner), &$$);
  };
 
 /*-----------------------------------------------------------*/
@@ -232,23 +232,23 @@ nodelist1rest:   DATA nodelist1data {}
              | LABELSEMBEDDED newline LABELS newline labels newline DATA newline labelednodelist1data {}
 ;
 
-nodelist1data: 		{}	/* nothing, empty graph */
+nodelist1data: {} /* nothing, empty graph */
              | nodelist1data nodelist1dataline {}
 ;
 
 nodelist1dataline: from tolist NEWLINE {} ;
 
 from: NUM { context->from=igraph_pajek_get_number(igraph_dl_yyget_text(scanner),
-							  igraph_dl_yyget_leng(scanner)); } ;
+                                                          igraph_dl_yyget_leng(scanner)); } ;
 
-tolist: {} | tolist integer { 
-  IGRAPH_CHECK(igraph_vector_push_back(&context->edges, 
-				       context->from-1)); 
+tolist: {} | tolist integer {
+  IGRAPH_CHECK(igraph_vector_push_back(&context->edges,
+                                       context->from-1));
   IGRAPH_CHECK(igraph_vector_push_back(&context->edges, $2-1));
  } ;
 
-labelednodelist1data: 		{}	/* nothing, empty graph */
-           | labelednodelist1data labelednodelist1dataline {}
+labelednodelist1data: {} /* nothing, empty graph */
+                    | labelednodelist1data labelednodelist1dataline {}
 ;
 
 labelednodelist1dataline: fromelabel labeltolist NEWLINE { } ;
@@ -258,23 +258,23 @@ fromelabel: elabel {
  };
 
 labeltolist: | labeltolist elabel {
-  IGRAPH_CHECK(igraph_vector_push_back(&context->edges, 
-				       context->from));
+  IGRAPH_CHECK(igraph_vector_push_back(&context->edges,
+                                       context->from));
   IGRAPH_CHECK(igraph_vector_push_back(&context->edges, $2));
  } ;
 
 %%
 
-int igraph_dl_yyerror(YYLTYPE* locp, igraph_i_dl_parsedata_t* context, 
-		      const char *s) {
-  snprintf(context->errmsg, 
-	   sizeof(context->errmsg)/sizeof(char)-1, 
-	   "%s in line %i", s, locp->first_line);
+int igraph_dl_yyerror(YYLTYPE* locp, igraph_i_dl_parsedata_t* context,
+                      const char *s) {
+  snprintf(context->errmsg,
+           sizeof(context->errmsg)/sizeof(char)-1,
+           "%s in line %i", s, locp->first_line);
   return 0;
 }
 
-int igraph_i_dl_add_str(char *newstr, int length, 
-			igraph_i_dl_parsedata_t *context) {
+int igraph_i_dl_add_str(char *newstr, int length,
+                        igraph_i_dl_parsedata_t *context) {
   int tmp=newstr[length];
   newstr[length]='\0';
   IGRAPH_CHECK(igraph_strvector_add(&context->labels, newstr));
@@ -282,16 +282,16 @@ int igraph_i_dl_add_str(char *newstr, int length,
   return 0;
 }
 
-int igraph_i_dl_add_edge(long int from, long int to, 
-			 igraph_i_dl_parsedata_t *context) {
+int igraph_i_dl_add_edge(long int from, long int to,
+                         igraph_i_dl_parsedata_t *context) {
   IGRAPH_CHECK(igraph_vector_push_back(&context->edges, from));
   IGRAPH_CHECK(igraph_vector_push_back(&context->edges, to));
   return 0;
 }
 
-int igraph_i_dl_add_edge_w(long int from, long int to, 
-			   igraph_real_t weight,
-			   igraph_i_dl_parsedata_t *context) {
+int igraph_i_dl_add_edge_w(long int from, long int to,
+                           igraph_real_t weight,
+                           igraph_i_dl_parsedata_t *context) {
   long int n=igraph_vector_size(&context->weights);
   long int n2=igraph_vector_size(&context->edges)/2;
   if (n != n2) {

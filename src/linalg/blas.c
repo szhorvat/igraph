@@ -63,8 +63,13 @@ void igraph_blas_dgemv(igraph_bool_t transpose, igraph_real_t alpha,
     IGRAPH_ASSERT(igraph_vector_size(x) == transpose ? m : n);
     IGRAPH_ASSERT(igraph_vector_size(y) == transpose ? n : m);
 
+#ifdef HAVE_GFORTRAN
+    igraphdgemv_(&trans, &m, &n, &alpha, VECTOR(a->data), &m,
+                 VECTOR(*x), &inc, &beta, VECTOR(*y), &inc, /* trans_len = */ 1);
+#else
     igraphdgemv_(&trans, &m, &n, &alpha, VECTOR(a->data), &m,
                  VECTOR(*x), &inc, &beta, VECTOR(*y), &inc);
+#endif
 }
 
 /**
@@ -99,10 +104,24 @@ void igraph_blas_dgemv_array(igraph_bool_t transpose, igraph_real_t alpha,
     m = (int) igraph_matrix_nrow(a);
     n = (int) igraph_matrix_ncol(a);
 
+#ifdef HAVE_GFORTRAN
+    igraphdgemv_(&trans, &m, &n, &alpha, VECTOR(a->data), &m,
+                 (igraph_real_t*)x, &inc, &beta, y, &inc, /* trans_len = */ 1);
+#else
     igraphdgemv_(&trans, &m, &n, &alpha, VECTOR(a->data), &m,
                  (igraph_real_t*)x, &inc, &beta, y, &inc);
+#endif
 }
 
+/**
+ * \function igraph_blas_dnrm2
+ * \brief Euclidean norm of a vector.
+ *
+ * \param v The vector.
+ * \return Real value, the norm of \p v.
+ *
+ * Time complexity: O(n) where n is the length of the vector.
+ */
 igraph_real_t igraph_blas_dnrm2(const igraph_vector_t *v) {
     int n = igraph_vector_size(v);
     int one = 1;

@@ -43,10 +43,12 @@ int main() {
            (long int) (igraph_vector_max(&membership) + 1),
            modularity);
 
+    printf("Communities membership: ");
+    igraph_vector_print(&membership);
+
     /* Destroy data structures at the end. */
     igraph_vector_destroy(&membership);
     igraph_destroy(&graph);
 
     return 0;
 }
-

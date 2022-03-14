@@ -44,7 +44,7 @@ IGRAPH_EXPORT int igraph_are_connected(const igraph_t *graph, igraph_integer_t v
 IGRAPH_EXPORT int igraph_count_multiple(const igraph_t *graph, igraph_vector_t *res, igraph_es_t es);
 IGRAPH_EXPORT int igraph_density(const igraph_t *graph, igraph_real_t *res,
                                  igraph_bool_t loops);
-IGRAPH_EXPORT int igraph_diversity(igraph_t *graph, const igraph_vector_t *weights,
+IGRAPH_EXPORT int igraph_diversity(const igraph_t *graph, const igraph_vector_t *weights,
                                    igraph_vector_t *res, const igraph_vs_t vs);
 IGRAPH_EXPORT int igraph_girth(const igraph_t *graph, igraph_integer_t *girth,
                                igraph_vector_t *circle);
@@ -54,7 +54,7 @@ IGRAPH_EXPORT int igraph_is_loop(const igraph_t *graph, igraph_vector_bool_t *re
                                  igraph_es_t es);
 IGRAPH_EXPORT int igraph_is_multiple(const igraph_t *graph, igraph_vector_bool_t *res,
                                      igraph_es_t es);
-IGRAPH_EXPORT int igraph_is_mutual(igraph_t *graph, igraph_vector_bool_t *res, igraph_es_t es);
+IGRAPH_EXPORT int igraph_is_mutual(const igraph_t *graph, igraph_vector_bool_t *res, igraph_es_t es);
 IGRAPH_EXPORT int igraph_is_simple(const igraph_t *graph, igraph_bool_t *res);
 IGRAPH_EXPORT int igraph_is_tree(const igraph_t *graph, igraph_bool_t *res, igraph_integer_t *root, igraph_neimode_t mode);
 IGRAPH_EXPORT int igraph_maxdegree(const igraph_t *graph, igraph_integer_t *res,

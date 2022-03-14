@@ -59,8 +59,6 @@
  * \return Error code.
  *
  * Time complexity: O(|E|)
- *
- * \example examples/simple/igraph_community_fluid_communities.c
  */
 int igraph_community_fluid_communities(const igraph_t *graph,
                                        igraph_integer_t no_of_communities,
@@ -95,11 +93,11 @@ int igraph_community_fluid_communities(const igraph_t *graph,
         IGRAPH_ERROR("Number of requested communities must not be greater than the number of nodes.",
                      IGRAPH_EINVAL);
     }
-    igraph_is_simple(graph, &res);
+    IGRAPH_CHECK(igraph_is_simple(graph, &res));
     if (!res) {
         IGRAPH_ERROR("Fluid community detection supports only simple graphs.", IGRAPH_EINVAL);
     }
-    igraph_is_connected(graph, &res, IGRAPH_WEAK);
+    IGRAPH_CHECK(igraph_is_connected(graph, &res, IGRAPH_WEAK));
     if (!res) {
         IGRAPH_ERROR("Fluid community detection supports only connected graphs.", IGRAPH_EINVAL);
     }

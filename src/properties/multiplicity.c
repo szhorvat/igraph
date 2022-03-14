@@ -253,14 +253,14 @@ int igraph_count_multiple(const igraph_t *graph, igraph_vector_t *res, igraph_es
         long int to = IGRAPH_TO(graph, e);
         igraph_vector_int_t *neis =
             igraph_lazy_inclist_get(&inclist, (igraph_integer_t) from);
-        
+
         if (neis == 0) {
             /* Most likely out of memory */
             IGRAPH_ERROR("Out of memory while building lazy incidence list", IGRAPH_ENOMEM);
         }
 
         VECTOR(*res)[i] = 0;
-        
+
         n = igraph_vector_int_size(neis);
         for (j = 0; j < n; j++) {
             long int e2 = (long int) VECTOR(*neis)[j];
@@ -308,7 +308,7 @@ int igraph_count_multiple(const igraph_t *graph, igraph_vector_t *res, igraph_es
  * supplied edges. An upper limit of the time complexity is O(n log(|E|)),
  * |E| is the number of edges in the graph.
  */
-int igraph_is_mutual(igraph_t *graph, igraph_vector_bool_t *res, igraph_es_t es) {
+int igraph_is_mutual(const igraph_t *graph, igraph_vector_bool_t *res, igraph_es_t es) {
 
     igraph_eit_t eit;
     igraph_lazy_adjlist_t adjlist;

@@ -254,6 +254,8 @@ add_legacy_tests(
   FOLDER tests/unit NAMES
   all_shortest_paths
   efficiency
+  global_transitivity
+  igraph_adjacent_triangles
   igraph_are_connected
   igraph_average_path_length
   igraph_average_path_length_dijkstra
@@ -269,10 +271,12 @@ add_legacy_tests(
   igraph_get_shortest_paths2
   igraph_get_shortest_paths_bellman_ford
   igraph_is_bipartite
+  igraph_is_connected
   igraph_is_chordal
   igraph_is_mutual
   igraph_is_tree
   igraph_list_triangles
+  igraph_local_scan_k_ecount
   igraph_local_transitivity
   igraph_neighborhood
   igraph_neighborhood_graphs
@@ -291,6 +295,7 @@ add_legacy_tests(
 add_legacy_tests(
   FOLDER tests/regression NAMES
   bug_1760
+  bug_1814
 )
 
 # components.at
@@ -374,6 +379,7 @@ add_legacy_tests(
   igraph_isomorphic_bliss
   isomorphism_test
   isoclasses
+  isoclasses2
   VF2-compat
 )
 
@@ -392,6 +398,7 @@ add_examples(
 add_legacy_tests(
   FOLDER tests/unit NAMES
   igraph_dyad_census
+  igraph_motifs_randesu
   igraph_motifs_randesu_estimate
   igraph_motifs_randesu_no
   triad_census
@@ -428,6 +435,11 @@ add_examples(
   FOLDER examples/simple NAMES
   igraph_convex_hull
   igraph_power_law_fit
+)
+
+add_legacy_tests(
+  FOLDER tests/unit NAMES
+  igraph_almost_equals
 )
 
 # operators.at
@@ -504,7 +516,6 @@ add_examples(
   FOLDER examples/simple NAMES
   igraph_community_edge_betweenness
   igraph_community_fastgreedy
-  igraph_community_fluid_communities
   igraph_community_label_propagation
   igraph_community_leading_eigenvector
   igraph_community_leiden
@@ -517,6 +528,9 @@ add_legacy_tests(
   FOLDER tests/unit NAMES
   community_leiden
   community_label_propagation
+  community_label_propagation2
+  community_label_propagation3
+  igraph_community_fluid_communities
   igraph_community_infomap
   igraph_community_leading_eigenvector2
   igraph_compare_communities
@@ -526,6 +540,7 @@ add_legacy_tests(
   igraph_split_join_distance
   levc-stress
   spinglass
+  community_walktrap
 )
 add_legacy_tests(
   FOLDER tests/regression NAMES
@@ -782,6 +797,7 @@ add_legacy_tests(
 add_legacy_tests(
   FOLDER tests/regression NAMES
   igraph_read_graph_gml_invalid_inputs
+  igraph_read_graph_graphml_invalid_inputs
 )
 
 # non-graph
@@ -810,11 +826,13 @@ add_legacy_tests(
 # benchmarks
 add_benchmarks(
   NAMES
+  igraph_average_path_length_unweighted
   igraph_betweenness
   igraph_betweenness_weighted
   igraph_cliques
   igraph_closeness_weighted
   igraph_coloring
+  igraph_decompose
   igraph_maximal_cliques
   igraph_pagerank
   igraph_pagerank_weighted

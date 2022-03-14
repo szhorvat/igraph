@@ -1,11 +1,11 @@
 <?xml version="1.0"?>
-<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" 
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN"
                "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
 <!ENTITY igraph "igraph">
 ]>
 
 <chapter id="igraph-Layout">
-<title>Generating Layouts for Graph Drawing</title>
+<title>Generating layouts for graph drawing</title>
 
 <section id="two-d-layout-generators"><title>2D layout generators</title>
 <!-- doxrox-include about_layouts -->

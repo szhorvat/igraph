@@ -24,7 +24,9 @@
 #include "igraph_community.h"
 
 #include "igraph_adjlist.h"
+#include "igraph_dqueue.h"
 #include "igraph_interface.h"
+#include "igraph_memory.h"
 #include "igraph_random.h"
 
 /**
@@ -32,12 +34,10 @@
  * \function igraph_community_label_propagation
  * \brief Community detection based on label propagation.
  *
- * This function implements the community detection method described in:
- * Raghavan, U.N. and Albert, R. and Kumara, S.: Near linear time algorithm
- * to detect community structures in large-scale networks. Phys Rev E
- * 76, 036106. (2007). This version extends the original method by
- * the ability to take edge weights into consideration and also
- * by allowing some labels to be fixed.
+ * This function implements the label propagation-based community detection
+ * algorithm described by Raghavan, Albert and Kumara. This version extends
+ * the original method by the ability to take edge weights into consideration
+ * and also by allowing some labels to be fixed.
  *
  * </para><para>
  * Weights are taken into account as follows: when the new label of node
@@ -47,15 +47,32 @@
  * labels). The new label of node \c i will then be the label whose edges
  * (among the ones incident on node \c i) have the highest total weight.
  *
+ * </para><para>
+ * Reference:
+ *
+ * </para><para>
+ * Raghavan, U.N. and Albert, R. and Kumara, S.:
+ * Near linear time algorithm to detect community structures in large-scale networks.
+ * Phys Rev E 76, 036106. (2007).
+ * https://doi.org/10.1103/PhysRevE.76.036106
+ *
  * \param graph The input graph, should be undirected to make sense.
  * \param membership The membership vector, the result is returned here.
  *    For each vertex it gives the ID of its community (label).
  * \param weights The weight vector, it should contain a positive
  *    weight for all the edges.
- * \param initial The initial state. If NULL, every vertex will have
+ * \param initial The initial state. If \c NULL, every vertex will have
  *   a different label at the beginning. Otherwise it must be a vector
  *   with an entry for each vertex. Non-negative values denote different
- *   labels, negative entries denote vertices without labels.
+ *   labels, negative entries denote vertices without labels. Unlabeled
+ *   vertices which are not reachable from any labeled ones will remain
+ *   unlabeled at the end of the label propagation process, and will be
+ *   labeled in an additional step to avoid returning negative values in
+ *   \p membership. In undirected graphs, this happens when entire connected
+ *   components are unlabeled. Then, each unlabeled component will receive
+ *   its own separate label. In directed graphs, the outcome of the
+ *   additional labeling should be considered undefined and may change
+ *   in the future; please do not rely on it.
  * \param fixed Boolean vector denoting which labels are fixed. Of course
  *   this makes sense only if you provided an initial state, otherwise
  *   this element will be ignored. Also note that vertices without labels
@@ -74,7 +91,7 @@ int igraph_community_label_propagation(const igraph_t *graph,
                                        igraph_vector_t *membership,
                                        const igraph_vector_t *weights,
                                        const igraph_vector_t *initial,
-                                       igraph_vector_bool_t *fixed,
+                                       const igraph_vector_bool_t *fixed,
                                        igraph_real_t *modularity) {
     long int no_of_nodes = igraph_vcount(graph);
     long int no_of_edges = igraph_ecount(graph);
@@ -82,9 +99,15 @@ int igraph_community_label_propagation(const igraph_t *graph,
     long int i, j, k;
     igraph_adjlist_t al;
     igraph_inclist_t il;
-    igraph_bool_t running = 1;
+    igraph_bool_t running, control_iteration;
+    igraph_bool_t unlabelled_left;
 
     igraph_vector_t label_counters, dominant_labels, nonzero_labels, node_order;
+
+    /* We make a copy of 'fixed' as a pointer into 'fixed_copy' after casting
+     * away the constness, and promise ourselves that we will make a proper
+     * copy of 'fixed' into 'fixed_copy' as soon as we start mutating it */
+    igraph_vector_bool_t* fixed_copy = (igraph_vector_bool_t*) fixed;
 
     /* The implementation uses a trick to avoid negative array indexing:
      * elements of the membership vector are increased by 1 at the start
@@ -133,7 +156,21 @@ int igraph_community_label_propagation(const igraph_t *graph,
                 if (VECTOR(*fixed)[i]) {
                     if (VECTOR(*membership)[i] == 0) {
                         IGRAPH_WARNING("Fixed nodes cannot be unlabeled, ignoring them.");
-                        VECTOR(*fixed)[i] = 0;
+
+                        /* We cannot modify 'fixed' because it is const, so we make a copy and
+                         * modify 'fixed_copy' instead */
+                        if (fixed_copy == fixed) {
+                            fixed_copy = igraph_Calloc(1, igraph_vector_bool_t);
+                            if (fixed_copy == 0) {
+                                IGRAPH_ERROR("Failed to copy 'fixed' vector.", IGRAPH_ENOMEM);
+                            }
+
+                            IGRAPH_FINALLY(igraph_free, fixed_copy);
+                            IGRAPH_CHECK(igraph_vector_bool_copy(fixed_copy, fixed));
+                            IGRAPH_FINALLY(igraph_vector_bool_destroy, fixed_copy);
+                        }
+
+                        VECTOR(*fixed_copy)[i] = 0;
                     } else {
                         no_of_not_fixed_nodes--;
                     }
@@ -145,14 +182,13 @@ int igraph_community_label_propagation(const igraph_t *graph,
         if (i > no_of_nodes) {
             IGRAPH_ERROR("Elements of the initial labeling vector must be between 0 and |V|-1.", IGRAPH_EINVAL);
         }
-        if (i <= 0) {
-            IGRAPH_ERROR("At least one vertex must be labeled in the initial labeling.", IGRAPH_EINVAL);
-        }
     } else {
         for (i = 0; i < no_of_nodes; i++) {
             VECTOR(*membership)[i] = i + 1;
         }
     }
+
+    /* From this point onwards we use 'fixed_copy' instead of 'fixed' */
 
     /* Create an adjacency/incidence list representation for efficiency.
      * For the unweighted case, the adjacency list is enough. For the
@@ -172,10 +208,10 @@ int igraph_community_label_propagation(const igraph_t *graph,
     IGRAPH_CHECK(igraph_vector_reserve(&dominant_labels, 2));
 
     /* Initialize node ordering vector with only the not fixed nodes */
-    if (fixed) {
+    if (fixed_copy) {
         IGRAPH_VECTOR_INIT_FINALLY(&node_order, no_of_not_fixed_nodes);
         for (i = 0, j = 0; i < no_of_nodes; i++) {
-            if (!VECTOR(*fixed)[i]) {
+            if (!VECTOR(*fixed_copy)[i]) {
                 VECTOR(node_order)[j] = i;
                 j++;
             }
@@ -185,6 +221,11 @@ int igraph_community_label_propagation(const igraph_t *graph,
         IGRAPH_FINALLY(igraph_vector_destroy, &node_order);
     }
 
+    /* There are two alternating types of iterations, one for changing labels and
+    the other one for checking the end condition - every vertex in the graph has
+    a label to which the maximum number of its neighbors belongs. If control_iteration
+    is true, we are just checking the end condition and not relabeling nodes. */
+    control_iteration = 1;
     running = 1;
     while (running) {
         long int v1, num_neis;
@@ -193,10 +234,15 @@ int igraph_community_label_propagation(const igraph_t *graph,
         igraph_vector_int_t *ineis;
         igraph_bool_t was_zero;
 
-        running = 0;
-
-        /* Shuffle the node ordering vector */
-        IGRAPH_CHECK(igraph_vector_shuffle(&node_order));
+        if (control_iteration) {
+            /* If we are in the control iteration, we expect in the begining of
+            the iterationthat all vertices meet the end condition, so running is false.
+            If some of them does not, running is set to true later in the code. */
+            running = 0;
+        } else {
+            /* Shuffle the node ordering vector if we are in the label updating iteration */
+            IGRAPH_CHECK(igraph_vector_shuffle(&node_order));
+        }
 
         RNG_BEGIN();
         /* In the prescribed order, loop over the vertices and reassign labels */
@@ -254,15 +300,18 @@ int igraph_community_label_propagation(const igraph_t *graph,
             }
 
             if (igraph_vector_size(&dominant_labels) > 0) {
-                /* Select randomly from the dominant labels */
-                k = RNG_INTEGER(0, igraph_vector_size(&dominant_labels) - 1);
-                k = (long int) VECTOR(dominant_labels)[k];
-                /* Check if the _current_ label of the node is also dominant */
-                if (VECTOR(label_counters)[(long)VECTOR(*membership)[v1]] != max_count) {
-                    /* Nope, we need at least one more iteration */
-                    running = 1;
+                if (control_iteration) {
+                    /* Check if the _current_ label of the node is also dominant */
+                    if (VECTOR(label_counters)[(long)VECTOR(*membership)[v1]] != max_count) {
+                        /* Nope, we need at least one more iteration */
+                        running = 1;
+                    }
                 }
-                VECTOR(*membership)[v1] = k;
+                else {
+                    /* Select randomly from the dominant labels */
+                    k = RNG_INTEGER(0, igraph_vector_size(&dominant_labels) - 1);
+                    VECTOR(*membership)[v1] = VECTOR(dominant_labels)[(long int)k];
+                }
             }
 
             /* Clear the nonzero elements in label_counters */
@@ -272,12 +321,23 @@ int igraph_community_label_propagation(const igraph_t *graph,
             }
         }
         RNG_END();
+
+        /* Alternating between control iterations and label updating iterations */
+        control_iteration = !control_iteration;
     }
+
+    if (weights) {
+        igraph_inclist_destroy(&il);
+    } else {
+        igraph_adjlist_destroy(&al);
+    }
+    IGRAPH_FINALLY_CLEAN(1);
 
     /* Shift back the membership vector, permute labels in increasing order */
     /* We recycle label_counters here :) */
     igraph_vector_fill(&label_counters, -1);
     j = 0;
+    unlabelled_left = 0;
     for (i = 0; i < no_of_nodes; i++) {
         k = (long)VECTOR(*membership)[i] - 1;
         if (k >= 0) {
@@ -291,16 +351,67 @@ int igraph_community_label_propagation(const igraph_t *graph,
             }
         } else {
             /* This is an unlabeled vertex */
+            unlabelled_left = 1;
         }
         VECTOR(*membership)[i] = k;
     }
 
-    if (weights) {
-        igraph_inclist_destroy(&il);
-    } else {
-        igraph_adjlist_destroy(&al);
+    /* From this point on, unlabelled nodes are represented with -1 (no longer 0). */
+#define IS_UNLABELLED(x) (VECTOR(*membership)[x] < 0)
+
+    /* If any nodes are left unlabelled, we assign the remaining labels to them,
+     * as well as to all unlabelled nodes reachable from them.
+     *
+     * Note that only those nodes could remain unlabelled which were unreachable
+     * from any labelled ones. Thus, in the undirected case, fully unlabelled
+     * connected components remain unlabelled. Here we label each such component
+     * with the same label.
+     */
+    if (unlabelled_left) {
+        igraph_dqueue_t q;
+        igraph_vector_t neis;
+
+        /* In the directed case, the outcome depends on the node ordering, thus we
+         * shuffle nodes one more time. */
+        IGRAPH_CHECK(igraph_vector_shuffle(&node_order));
+
+        IGRAPH_VECTOR_INIT_FINALLY(&neis, 0);
+
+        IGRAPH_CHECK(igraph_dqueue_init(&q, 0));
+        IGRAPH_FINALLY(igraph_dqueue_destroy, &q);
+
+        for (i=0; i < no_of_nodes; ++i) {
+            long int v = VECTOR(node_order)[i];
+
+            /* Is this node unlabelled? */
+            if (IS_UNLABELLED(v)) {
+                /* If yes, we label it, and do a BFS to apply the same label
+                 * to all other unlabelled nodes reachable from it */
+                igraph_dqueue_push(&q, v);
+                VECTOR(*membership)[v] = j;
+                while (!igraph_dqueue_empty(&q)) {
+                    long int ni, num_neis;
+                    long int actnode = igraph_dqueue_pop(&q);
+
+                    IGRAPH_CHECK(igraph_neighbors(graph, &neis, actnode, IGRAPH_OUT));
+                    num_neis = igraph_vector_size(&neis);
+
+                    for (ni = 0; ni < num_neis; ++ni) {
+                        long int neighbor = VECTOR(neis)[ni];
+                        if (IS_UNLABELLED(neighbor)) {
+                            VECTOR(*membership)[neighbor] = j;
+                            IGRAPH_CHECK(igraph_dqueue_push(&q, neighbor));
+                        }
+                    }
+                }
+                j++;
+            }
+        }
+
+        igraph_vector_destroy(&neis);
+        igraph_dqueue_destroy(&q);
+        IGRAPH_FINALLY_CLEAN(2);
     }
-    IGRAPH_FINALLY_CLEAN(1);
 
     if (modularity) {
       IGRAPH_CHECK(igraph_modularity(graph, membership, weights,
@@ -313,6 +424,12 @@ int igraph_community_label_propagation(const igraph_t *graph,
     igraph_vector_destroy(&dominant_labels);
     igraph_vector_destroy(&nonzero_labels);
     IGRAPH_FINALLY_CLEAN(4);
+
+    if (fixed != fixed_copy) {
+        igraph_vector_bool_destroy(fixed_copy);
+        igraph_Free(fixed_copy);
+        IGRAPH_FINALLY_CLEAN(2);
+    }
 
     return IGRAPH_SUCCESS;
 }

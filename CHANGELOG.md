@@ -2,6 +2,136 @@
 
 ## [Unreleased]
 
+### Changed
+
+ - `igraph_get_all_shortest_paths_dijsktra()` now uses tolerances when comparing path
+   lengths, and is thus robust to numerical roundoff errors.
+ - `igraph_vector_*_swap` and `igraph_matrix_swap` now take O(1) instead of O(n) and accept all sizes.
+
+### Fixed
+
+ - NCOL and LGL format writers no longer accept "name" and "weight" attributes
+   of invalid types.
+ - The LGL writer could not access numerical weight attributes, potentially leading
+   to crashes.
+ - External PLFIT libraries and their headers are now detected at their standard
+   installation location.
+ - `igraph_vector_init()` no longer accepts negative vector sizes.
+ - `igraph_assortativity_nominal()` crashed on the null graph.
+ - Label propagation now ensures that all labels are dominant.
+ - Fixed incorrect partition results for walktrap algorithm (issue #1927)
+ - Negative values returned by `igraph_rng_get_integer()` and `RNG_INTEGER()` were incorrect,
+   one larger than they should have been.
+ - `igraph_community_walktrap()` now checks its `steps` input argument.
+
+### Other
+
+ - The C attribute handler now verifies attribute types when retrieving attributes.
+ - Documentation improvements
+
+## [0.9.6] - 2022-01-05
+
+### Changed
+
+ - Isomorphism class functions (`igraph_isoclass()`, `igraph_isoclass_subgraph()`,
+   `igraph_isoclass_create`) and motif finder functions (`igraph_motifs_randesu()`,
+   `igraph_motifs_randesu_estimate()`, `igraph_motifs_randesu_callback()`) now
+   support undirected (sub)graphs of sizes 5 and 6. Previsouly only sizes 3 and 4
+   were supported.
+
+### Fixed
+
+ - igraph would not build with MinGW when using the vendored GLPK and enabling TLS.
+ - Removed some uses of `abort()` from vendored libraries, which could unexpectedly
+   shut down the host language of igraph's high-level interfaces.
+ - `igraph_community_label_propagation()` no longer leaves any vertices unlabeled
+   when they were not reachable from any labeled ones, i.e. the returned membership
+   vector is guaranteed not to contain negative values (#1853).
+ - The Kamada-Kawai layout is now interruptible.
+ - The Fruchterman-Reingold layout is now interruptible.
+ - Fixed a bug in `igraph_cmp_epsilon()` that resulted in incorrect results for
+   edge betweenness calculations in certain rare cases with x87 floating point
+   math when LTO was also enabled (#1894).
+ - Weighted clique related functions now fall back to the unweighted variants
+   when a null vertex weight vector is given to them.
+ - `igraph_erdos_renyi_game_(gnm|gnp)` would not produce self-loops for the singleton
+   graph.
+ - Fixed a bug in `igraph_local_efficiency()` that sometimes erroneously
+   reported zero as the local efficiency of a vertex in directed graphs.
+ - `igraph_vector_update()` (and its type-specific variants) did not check for
+   memory allocation failure.
+ - Fixed a potential crash in the GraphML reader that would be triggered by some
+   invalid GraphML files.
+
+### Other
+
+ - `igraph_is_tree()` has improved performance and memory usage.
+ - `igraph_is_connected()` has improved performance when checking weak connectedness.
+ - Improved error handling in `igraph_maximal_cliques()` and related functions.
+ - The build system now checks that GLPK is of a compatible version (4.57 or later).
+ - The vendored `plfit` package was updated to 0.9.3.
+ - You can now build igraph with an external `plfit` instead of the vendored one.
+ - Documentation improvements.
+
+## [0.9.5] - 2021-11-11
+
+### Fixed
+
+ - `igraph_reindex_membership()` does not allow negative membership indices any more.
+
+ - `igraph_rewire_directed_edges()` now generates multigraphs when edge directions
+   are ignored, to make it consistent with the directed case.
+
+ - Fixed a bug in `igraph_gomory_hu_tree()` that returned only the equivalent flow
+   tree instead of the cut tree (#1810).
+
+ - Fixed a bug in the `IGRAPH_TO_UNDIRECTED_COLLAPSE` mode of
+   `igraph_to_undirected()` that provided an incorrect merge vector to the
+   attribute handler, leading to problems when edge attributes were merged
+   using an attribute combination (#1814).
+
+ - Fixed the behaviour of the `IGRAPH_ENABLE_LTO` option when it was set to
+   `AUTO`; earlier versions had a bug where `AUTO` simply checked whether LTO
+   is supported but then did not use LTO even if it was supported.
+
+ - When using igraph from a CMake project, it is now checked that the project has
+   the C++ language enabled. This is necessary for linking to igraph with CMake.
+
+### Other
+
+ - Improved the root selection method for disconnected graphs in the
+   Reingold-Tilford layout (#1836). The new root selection method provides
+   niceer results if the graph is not a tree, although it is still recommended
+   to use the Sugiyama layout instead, unless the input graph is _almost_ a
+   tree, in which case Reingold-Tilfold may still be preferred.
+
+ - `igraph_decompose()` is now much faster for large graphs containing many
+   isolates or small components (#960).
+
+ - `igraph_largest_cliques()` and `igraph_clique_number()` were re-written to
+   use `igraph_maximal_cliques_callback()` so they are much faster now (#804).
+
+ - The vendored GLPK has been upgraded to GLPK 5.0.
+
+ - Documentation improvements.
+
+## [0.9.4] - 2021-05-31
+
+### Changed
+
+ - Unweighted transitivity (i.e. clustering coefficient) calculations now ignore multi-edges and edge directions instead of rejecting multigraphs and directed graphs.
+ - `igraph_transitivity_barrat()` now returns an error code if the input graph has multiple edges (which is not handled correctly by the implementation yet).
+
+### Fixed
+
+ - `igraph_local_scan_k_ecount()` now handles loops correctly.
+ - `igraph_transitivity_avglocal_undirected()` is no longer slower than `igraph_transitivity_local_undirected()`.
+ - Worked around an invalid warning issued by Clang 9.0 when compiling with OpenMP.
+
+### Other
+
+ - Documentation improvements.
+
 ## [0.9.3] - 2021-05-05
 
 ### Added
@@ -168,7 +298,7 @@
    * `igraph_asymmetric_preference_game()` now accept a different number of in-types and out-types.
  - `igraph_subisomorphic_lad()` now supports graphs with self-loops.
  - `igraph_is_chordal()` and `igraph_maximum_cardinality_search()` now support non-simple graphs and directed graphs.
- - `igraph_realize_degree_sequence()` has an additional argument controlling whether multi-edges or self-loops are allowed.   
+ - `igraph_realize_degree_sequence()` has an additional argument controlling whether multi-edges or self-loops are allowed.
  - `igraph_is_connected()` now returns false for the null graph; see https://github.com/igraph/igraph/issues/1538 for the reasoning behind this decision.
  - `igraph_lapack_ddot()` is renamed to `igraph_blas_ddot()`.
  - `igraph_to_directed()`: added RANDOM and ACYCLIC modes (PR #1511).
@@ -417,3 +547,18 @@
  - igraph now uses the high-performance [Cliquer library](https://users.aalto.fi/~pat/cliquer.html) to find (non-maximal) cliques
  - Provide proper support for Windows, using `__declspec(dllexport)` and `__declspec(dllimport)` for `DLL`s and static usage by using `#define IGRAPH_STATIC 1`.
  - Provided integer versions of `dqueue` and `stack` data types.
+
+[Unreleased]: https://github.com/igraph/igraph/compare/0.9.6..HEAD
+[0.9.6]: https://github.com/igraph/igraph/compare/0.9.5...0.9.6
+[0.9.5]: https://github.com/igraph/igraph/compare/0.9.4...0.9.5
+[0.9.4]: https://github.com/igraph/igraph/compare/0.9.3...0.9.4
+[0.9.3]: https://github.com/igraph/igraph/compare/0.9.2...0.9.3
+[0.9.2]: https://github.com/igraph/igraph/compare/0.9.1...0.9.2
+[0.9.1]: https://github.com/igraph/igraph/compare/0.9.0...0.9.1
+[0.9.0]: https://github.com/igraph/igraph/compare/0.8.5...0.9.0
+[0.8.5]: https://github.com/igraph/igraph/compare/0.8.4...0.8.5
+[0.8.4]: https://github.com/igraph/igraph/compare/0.8.3...0.8.4
+[0.8.3]: https://github.com/igraph/igraph/compare/0.8.2...0.8.3
+[0.8.2]: https://github.com/igraph/igraph/compare/0.8.1...0.8.2
+[0.8.1]: https://github.com/igraph/igraph/compare/0.8.0...0.8.1
+[0.8.0]: https://github.com/igraph/igraph/releases/tag/0.8.0

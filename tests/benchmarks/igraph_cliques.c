@@ -19,6 +19,7 @@ void free_result(igraph_vector_ptr_t *res) {
 int main() {
     igraph_t g;
     igraph_vector_ptr_t res;
+    igraph_integer_t res_int;
 
     igraph_rng_seed(igraph_rng_default(), 42);
     BENCH_INIT();
@@ -28,7 +29,7 @@ int main() {
     igraph_erdos_renyi_game(&g, IGRAPH_ERDOS_RENYI_GNM, 100, 3000, IGRAPH_UNDIRECTED, IGRAPH_NO_LOOPS);
     BENCH(" 1 Cliques in random graph with 100 vertices and 3000 edges",
           igraph_cliques(&g, &res, /* min_size= */ 0, /* max_size= */ 0);
-         );    
+         );
     igraph_destroy(&g);
     free_result(&res);
 
@@ -36,8 +37,12 @@ int main() {
     BENCH(" 2 Cliques in random graph with 200 vertices and 10000 edges, up to size 5",
           igraph_cliques(&g, &res, /* min_size= */ 0, /* max_size= */ 5);
          );
-    igraph_destroy(&g);
     free_result(&res);
+    BENCH(" 3 Clique number of the same graph with 200 vertices and 10000 edges",
+          igraph_clique_number(&g, &res_int);
+         );
+    free_result(&res);
+    igraph_destroy(&g);
 
     igraph_vector_ptr_destroy(&res);
 

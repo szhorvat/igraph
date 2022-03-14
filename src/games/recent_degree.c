@@ -300,7 +300,7 @@ int igraph_recent_degree_aging_game(igraph_t *graph,
     for (i = 1; i < no_of_nodes; i++) {
         igraph_real_t sum;
         long int to;
-        
+
         if (have_outseq) {
             no_of_neighbors = (long int) VECTOR(*outseq)[i];
         }
@@ -346,7 +346,7 @@ int igraph_recent_degree_aging_game(igraph_t *graph,
         }
 
         /* aging */
-        for (k = 1; i - binwidth * k + 1 >= 1; k++) {
+        for (k = 1; binwidth * k <= i; k++) {
             long int shnode = i - binwidth * k;
             long int deg = (long int) VECTOR(degree)[shnode];
             long int age = (i - shnode) / binwidth;

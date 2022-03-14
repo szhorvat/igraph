@@ -493,6 +493,13 @@ static int igraph_i_eigenvector_centrality_directed(const igraph_t *graph, igrap
  * self-loops on the corresponding vertex.
  *
  * </para><para>
+ * In the weighted case, the eigenvector centrality of a vertex is proportional
+ * to the weighted sum of centralities of its neighbours, i.e.
+ * <code>c_i = sum_j w_ij c_j</code>, where <code>w_ij</code> is the weight
+ * of the edge connecting vertices \c i and \c j. The weights of parallel edges
+ * are added up.
+ *
+ * </para><para>
  * The centrality scores returned by igraph can be normalized
  * (using the \p scale parameter) such that the largest eigenvector centrality
  * score is 1 (with one exception, see below).
@@ -530,9 +537,9 @@ static int igraph_i_eigenvector_centrality_directed(const igraph_t *graph, igrap
  *     in a directed graph. It is ignored for undirected graphs.
  * \param scale If not zero then the result will be scaled such that
  *     the absolute value of the maximum centrality is one.
- * \param weights A null pointer (=no edge weights), or a vector
- *     giving the weights of the edges. The algorithm might result
- *     complex numbers is some weights are negative. In this case only
+ * \param weights A null pointer (= no edge weights), or a vector
+ *     giving the weights of the edges. The algorithm might produce
+ *     complex numbers when some weights are negative. In this case only
  *     the real part is reported.
  * \param options Options to ARPACK. See \ref igraph_arpack_options_t
  *    for details. Note that the function overwrites the

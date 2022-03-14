@@ -24,7 +24,7 @@
 
 #include "igraph_constructors.h"
 
-#include "internal/hacks.h" 
+#include "internal/hacks.h"
 
 const igraph_real_t igraph_i_famous_bull[] = {
     5, 5, 0,
@@ -494,5 +494,5 @@ int igraph_famous(igraph_t *graph, const char *name) {
         return igraph_i_famous(graph, igraph_i_famous_zachary);
     }
 
-    IGRAPH_ERROR("Unknown graph, see documentation", IGRAPH_EINVAL);
+    IGRAPH_ERRORF("%s is not a known graph. See the documentation for valid graph names.", IGRAPH_EINVAL, name);
 }

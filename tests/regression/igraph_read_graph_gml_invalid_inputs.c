@@ -1,17 +1,17 @@
 /*
    IGraph library.
    Copyright (C) 2021  The igraph development team
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
@@ -24,6 +24,8 @@
 #include "igraph.h"
 #include <stdio.h>
 
+#include "../unit/test_utilities.inc"
+
 int test_file(const char* fname) {
     FILE *ifile;
     igraph_t g;
@@ -33,7 +35,7 @@ int test_file(const char* fname) {
     if (ifile == 0) {
         return 1;
     }
-    
+
     retval = igraph_read_graph_gml(&g, ifile);
     if (!retval) {
         /* input was accepted, this is a bug; attempt to clean up after
@@ -48,11 +50,13 @@ int test_file(const char* fname) {
     return 0;
 }
 
+#undef RUN_TEST
 #define RUN_TEST(fname) {   \
     index++;                \
     if (test_file(fname)) { \
         return index;       \
     }                       \
+    VERIFY_FINALLY_STACK(); \
 }
 
 int main(int argc, char* argv[]) {
@@ -67,7 +71,7 @@ int main(int argc, char* argv[]) {
     RUN_TEST("invalid3.gml");
     RUN_TEST("invalid4.gml");
     RUN_TEST("invalid5.gml");
+    RUN_TEST("invalid6.gml");
 
     return 0;
 }
-

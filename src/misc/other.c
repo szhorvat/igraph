@@ -26,7 +26,7 @@
 #include "igraph_types.h"
 
 #include "core/interruption.h"
-#include "plfit/error.h"
+#include "plfit/plfit_error.h"
 #include "plfit/plfit.h"
 
 #include <math.h>
@@ -63,7 +63,7 @@ int igraph_running_mean(const igraph_vector_t *data, igraph_vector_t *res,
         IGRAPH_ERRORF("Data vector length (%ld) smaller than bin width (%" IGRAPH_PRId ").", IGRAPH_EINVAL, igraph_vector_size(data), binwidth);
     }
     if (binwidth < 1) {
-        IGRAPH_ERRORF("Bin width for running mean should be at least 1, got %" IGRAPH_PRId ".", IGRAPH_EINVAL, igraph_vector_size(data), binwidth);
+        IGRAPH_ERRORF("Bin width for running mean should be at least 1, got %" IGRAPH_PRId ".", IGRAPH_EINVAL, binwidth);
     }
 
     /* Memory for result */
@@ -432,4 +432,3 @@ int igraph_power_law_fit(const igraph_vector_t* data, igraph_plfit_result_t* res
 
     return 0;
 }
-

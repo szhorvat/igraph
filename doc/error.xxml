@@ -1,11 +1,11 @@
 <?xml version="1.0"?>
-<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" 
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN"
                "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
 <!ENTITY igraph "igraph">
 ]>
 
 <chapter id="igraph-Error">
-<title>Error Handling</title>
+<title>Error handling</title>
 
 <section id="error-handling-basics">
 <!-- doxrox-include error_handling_basics -->
