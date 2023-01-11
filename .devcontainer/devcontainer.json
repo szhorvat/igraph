@@ -16,7 +16,8 @@
     // Environment variables containing settings for various tools
     "containerEnv": {
         "CMAKE_GENERATOR": "Ninja",
-        "ASAN_OPTIONS": "color=always"
+        "ASAN_OPTIONS": "color=always",
+        "IGRAPH_CTEST_MANUAL_BUILD": "1"
     },
 
     // Use 'forwardPorts' to make a list of ports inside the container available locally.
