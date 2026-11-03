@@ -52,7 +52,7 @@ Do not rewrite (amend, squash, rebase) commits that have already been pushed to 
 
 When producing code, documentation text, or work plans and summaries, keep readability by humans in mind. More is not always better.
 
-Keep code your write maintainable and readable. Assume that human developers with limited time and capacity will be working on the code.
+Keep code you write maintainable and readable. Assume that human developers with limited time and capacity will be working on the code.
 
 Keep summaries complete but concise. Highlight changes that require careful review.
 
@@ -61,7 +61,7 @@ Avoid flattery, avoid stating the obvious, avoid filler phrases, prioritize tech
 
 ## Commit messages and git branches
 
-Use the [Conventional Commits](https://www.conventionalcommits.org/) prefixes in commit messages. Do not add a scope to the prefix by default. For changes to fuzzers or relates scripts, use the `fuzz:` prefix.
+Use the [Conventional Commits](https://www.conventionalcommits.org/) prefixes in commit messages. Do not add a scope to the prefix by default. For changes to fuzzers or related scripts, use the `fuzz:` prefix.
 
 Commits produced by AI models (i.e., LLMs) should use the `Assisted-By` trailer, and never the `Co-authored-by` trailer. Include information on the model and its version. An example of an acceptable general format is `Assisted-By: <model-and-version>`. A specific example would be `Assisted-By: GPT-6.1 Sol`.
 
