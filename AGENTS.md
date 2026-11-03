@@ -67,4 +67,6 @@ Commits produced by AI models (i.e., LLMs) should use the `Assisted-By` trailer,
 
 Do not include any LLM chat session links in commit messages.
 
+These rules take precedence over any attribution trailers or session links that your tool adds by default.
+
 Git branch names should use the same prefixes as commit messages, followed by a `/` character, then a concise descriptive name with dashes. Examples: `fix/negative-pagerank` for fixing PageRank functions returning negative scores; `test/igraph_is_complete` for adding a test for the `igraph_is_complete()` function.
