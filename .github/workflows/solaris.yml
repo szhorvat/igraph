@@ -1,0 +1,51 @@
+name: Solaris
+
+on:
+  push:
+    branches: [ 'ci/solaris' ]
+  workflow_dispatch:
+
+jobs:
+  solaris:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - release: '11.4-gcc-14'
+            cc: gcc
+            cxx: g++
+          - release: '11.4-clang-19'
+            cc: clang
+            cxx: clang++
+    name: solaris (${{ matrix.release }})
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Build and test in Solaris
+        uses: vmactions/solaris-vm@v1
+        with:
+          release: ${{ matrix.release }}
+          usesh: true
+          prepare: |
+            pkg install -v developer/build/cmake developer/parser/bison developer/lexer/flex developer/build/gnu-make library/libxml2 library/gmp developer/versioning/git || true
+          run: |
+            set -e
+            cat /etc/release
+            uname -a
+            ${{ matrix.cc }} --version
+            ${{ matrix.cxx }} --version
+            cmake --version
+            mkdir build && cd build
+            cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+              -DCMAKE_C_COMPILER=${{ matrix.cc }} -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} \
+              -DCMAKE_MAKE_PROGRAM=gmake \
+              -DIGRAPH_USE_INTERNAL_BLAS=ON -DIGRAPH_USE_INTERNAL_LAPACK=ON \
+              -DIGRAPH_USE_INTERNAL_ARPACK=ON -DIGRAPH_USE_INTERNAL_GLPK=ON \
+              -DIGRAPH_USE_INTERNAL_PLFIT=ON -DIGRAPH_VERIFY_FINALLY_STACK=ON \
+              -DIGRAPH_WARNINGS_AS_ERRORS=OFF
+            gmake -k -j4 build_tests 2>&1 | tee build.log | grep -E 'warning:|error:' | sort | uniq -c | sort -rn | head -100 || true
+            gmake -j4 build_tests
+            OMP_NUM_THREADS=1 ctest -j4 --output-on-failure --timeout 600
