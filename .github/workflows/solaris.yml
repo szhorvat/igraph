@@ -24,6 +24,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+      # git inside the VM fails on the synced checkout (ownership), so record
+      # the version here
+      - name: Write IGRAPH_VERSION
+        run: git describe --tags --abbrev=9 | sed 's/^v//' > IGRAPH_VERSION && cat IGRAPH_VERSION
       - name: Build and test in Solaris
         uses: vmactions/solaris-vm@v1
         with:
