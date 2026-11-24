@@ -6,6 +6,7 @@
 
 #include "igraph_matrix.h"
 
+#define NANOFLANN_NO_THREADS /* TEST (ci/bsd): igraph never builds the index multi-threaded */
 #include "nanoflann/nanoflann.hpp"
 
 #include <vector>
