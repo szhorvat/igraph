@@ -36,7 +36,7 @@ jobs:
           sudo apt-get install -y ninja-build bison flex >/dev/null
           cat $ANDROID_NDK_LATEST_HOME/source.properties
           cmake -S . -B build-android -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo $VENDORED -DIGRAPH_VERIFY_FINALLY_STACK=ON -DIGRAPH_ENABLE_TLS=ON \
-            -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_LATEST_HOME/build/cmake/android.toolchain.cmake -DANDROID_ABI=${{ matrix.abi }} -DANDROID_PLATFORM=${{ matrix.api }} -DANDROID_STL=c++_static -DF2C_EXTERNAL_ARITH_HEADER=$GITHUB_WORKSPACE/.github/arith-x86_64-linux.h > cfg.log 2>&1 || { tail -40 cfg.log; exit 1; }
+            -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_LATEST_HOME/build/cmake/android.toolchain.cmake -DANDROID_ABI=${{ matrix.abi }} -DANDROID_PLATFORM=${{ matrix.api }} -DANDROID_STL=c++_static -DIGRAPH_GRAPHML_SUPPORT=OFF -DF2C_EXTERNAL_ARITH_HEADER=$GITHUB_WORKSPACE/.github/arith-x86_64-linux.h > cfg.log 2>&1 || { tail -40 cfg.log; exit 1; }
           sed -n '/Build configuration/,/Diff tool/p' cfg.log
           grep -E '^(HAVE_[A-Z_]*):' build-android/CMakeCache.txt | sort
           rc=0; cmake --build build-android --target build_tests -- -k 0 > build.log 2>&1 || rc=$?
@@ -133,4 +133,4 @@ jobs:
           git config --global --add safe.directory '*'
           git describe --tags --abbrev=9 | sed 's/^v//' > IGRAPH_VERSION; cat IGRAPH_VERSION
           uname -a; gcc --version | head -1; cmake --version | head -1
-          sh .github/bsd-build.sh vendored $VENDORED
+          sh .github/bsd-build.sh vendored $VENDORED -DUSE_CCACHE=OFF

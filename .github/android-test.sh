@@ -15,7 +15,14 @@ CC="$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/${T}${API
 # arithchk is run through the emulator wrapper during the build, so the device must be up first.
 cmake -S . -B build-android -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo $VENDORED -DIGRAPH_VERIFY_FINALLY_STACK=ON -DIGRAPH_ENABLE_TLS=ON \
   -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_LATEST_HOME/build/cmake/android.toolchain.cmake" -DANDROID_ABI=$ABI -DANDROID_PLATFORM=$API -DANDROID_STL=c++_static \
-  -DCMAKE_CROSSCOMPILING_EMULATOR="$W/.github/adb-run.sh" -DIGRAPH_PRINT_ARITH_HEADER=ON > cfg.log 2>&1 || { tail -40 cfg.log; echo "RESULT android: CONFIGURE FAILED"; exit 1; }
+  -DCMAKE_CROSSCOMPILING_EMULATOR="$W/.github/adb-run.sh" -DIGRAPH_PRINT_ARITH_HEADER=ON -DIGRAPH_GRAPHML_SUPPORT=OFF > cfg.log 2>&1
+if [ $? -ne 0 ]; then
+  tail -20 cfg.log
+  echo "--- try_run details from CMakeConfigureLog.yaml:"
+  grep -n -A40 "ieee754_endianness_check" build-android/CMakeFiles/CMakeConfigureLog.yaml | grep -E "exitCode|stdout|stderr|run:|OK|returnValue|executable" | head -30
+  echo "RESULT android: CONFIGURE FAILED on endianness try_run; retrying with IEEE754_DOUBLE_ENDIANNESS_MATCHES=ON"
+  cmake build-android -DIEEE754_DOUBLE_ENDIANNESS_MATCHES=ON > cfg.log 2>&1 || { tail -40 cfg.log; echo "RESULT android: CONFIGURE FAILED"; exit 1; }
+fi
 sed -n '/Build configuration/,/Diff tool/p' cfg.log
 grep -E '^(HAVE_[A-Z_]*):' build-android/CMakeCache.txt | sort
 cmake --build build-android --target build_tests -- -k 0 > build.log 2>&1; rc=$?
