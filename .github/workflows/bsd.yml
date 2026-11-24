@@ -93,6 +93,8 @@ jobs:
           envs: 'VENDORED'
           copyback: false
           prepare: |
+            cat /etc/pkg_install.conf
+            export PKG_PATH=https://cdn.NetBSD.org/pub/pkgsrc/packages/NetBSD/x86_64/11.0_2026Q3/All
             for p in cmake ninja-build bison flex libxml2 gmp glpk arpack-ng lapack blas; do /usr/sbin/pkg_add $p || echo "PACKAGE $p NOT INSTALLED"; done
           run: |
             uname -a; cc --version; c++ --version | head -1
