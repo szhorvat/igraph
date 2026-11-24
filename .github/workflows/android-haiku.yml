@@ -39,7 +39,7 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_LATEST_HOME/build/cmake/android.toolchain.cmake -DANDROID_ABI=${{ matrix.abi }} -DANDROID_PLATFORM=${{ matrix.api }} -DANDROID_STL=c++_static -DF2C_EXTERNAL_ARITH_HEADER=$GITHUB_WORKSPACE/.github/arith-x86_64-linux.h > cfg.log 2>&1 || { tail -40 cfg.log; exit 1; }
           sed -n '/Build configuration/,/Diff tool/p' cfg.log
           grep -E '^(HAVE_[A-Z_]*):' build-android/CMakeCache.txt | sort
-          cmake --build build-android --target build_tests -- -k 0 > build.log 2>&1; rc=$?
+          rc=0; cmake --build build-android --target build_tests -- -k 0 > build.log 2>&1 || rc=$?
           echo "build exit code $rc; warnings:"; grep 'warning:' build.log | sort | uniq -c | sort -rn | head -40
           echo "errors:"; grep -E 'error:|FAILED:' build.log | sort | uniq -c | sort -rn | head -40
           exit $rc
@@ -80,6 +80,8 @@ jobs:
           script: bash .github/android-test.sh
 
   haiku:
+    # Only on manual dispatch, so that re-pushes for the Android jobs don't restart the Haiku VMs.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 240
     strategy:
