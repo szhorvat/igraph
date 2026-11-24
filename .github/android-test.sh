@@ -32,6 +32,11 @@ grep -A10 "arith.h" build.log | head -14
 [ $rc -eq 0 ] || { echo "RESULT android: BUILD FAILED"; exit 1; }
 ( cd build-android/tests && find . -maxdepth 1 -type f -perm -u+x | tar -cf /tmp/bin.tar -T - )
 adb push /tmp/bin.tar /data/local/tmp/ >/dev/null && adb shell "cd /data/local/tmp/bin && tar -xf ../bin.tar"
+echo "--- diagnostics"
+adb shell "ls -l /data/local/tmp/bin | head -5; ls /data/local/tmp/bin | wc -l; ls /data/local/tmp/ws/tests | head -3"
+adb shell "/data/local/tmp/bin/test_bitset; echo rc=\$?" | head -20
+( cd build-android && ctest -V -R '^test::bitset$' 2>&1 | tail -30; ctest --output-on-failure -R '^example::igraph_version$' 2>&1 | tail -30 )
+echo "--- end diagnostics"
 cd build-android && ctest -j 2 --timeout 600 > ctest.log 2>&1; rc=$?
 grep -E "tests passed|\(Failed\)|\(SEGFAULT\)|\(Timeout\)|\(Subprocess|Exception" ctest.log | head -60
 grep -B2 -A25 -E "\*\*\*Failed|Exception:" ctest.log | head -250
