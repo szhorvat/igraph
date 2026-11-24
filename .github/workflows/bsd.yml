@@ -1,0 +1,130 @@
+# Temporary portability workflow for BSD and illumos systems (not for merging).
+name: BSD
+
+on:
+  push:
+    branches: [ 'ci/bsd' ]
+  workflow_dispatch:
+
+env:
+  VENDORED: >-
+    -DIGRAPH_USE_INTERNAL_BLAS=ON -DIGRAPH_USE_INTERNAL_LAPACK=ON
+    -DIGRAPH_USE_INTERNAL_ARPACK=ON -DIGRAPH_USE_INTERNAL_GLPK=ON
+    -DIGRAPH_USE_INTERNAL_GMP=ON -DIGRAPH_USE_INTERNAL_PLFIT=ON
+
+jobs:
+  freebsd:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - release: '14.5'
+            arch: x86_64
+            configs: 'vendored system'
+          - release: '15.1'
+            arch: x86_64
+            configs: 'vendored system'
+          - release: '15.1'
+            arch: aarch64
+            configs: 'vendored'
+    name: freebsd-${{ matrix.release }}-${{ matrix.arch }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Write IGRAPH_VERSION
+        run: git describe --tags --abbrev=9 | sed 's/^v//' > IGRAPH_VERSION && cat IGRAPH_VERSION
+      - uses: vmactions/freebsd-vm@v1
+        with:
+          release: ${{ matrix.release }}
+          arch: ${{ matrix.arch }}
+          envs: 'VENDORED'
+          copyback: false
+          prepare: |
+            for p in cmake ninja bison flex libxml2 gmp glpk arpack-ng openblas; do pkg install -y $p || echo "PACKAGE $p NOT INSTALLED"; done
+          run: |
+            freebsd-version; uname -a; cc --version; c++ --version | head -1
+            r=0
+            for c in ${{ matrix.configs }}; do
+              if [ $c = vendored ]; then sh .github/bsd-build.sh $c $VENDORED || r=1; else sh .github/bsd-build.sh $c || r=1; fi
+            done
+            exit $r
+
+  openbsd:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    name: openbsd-8.0
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Write IGRAPH_VERSION
+        run: git describe --tags --abbrev=9 | sed 's/^v//' > IGRAPH_VERSION && cat IGRAPH_VERSION
+      - uses: vmactions/openbsd-vm@v1
+        with:
+          release: '8.0'
+          envs: 'VENDORED'
+          copyback: false
+          prepare: |
+            for p in cmake ninja bison libxml gmp glpk arpack lapack; do pkg_add -I $p || echo "PACKAGE $p NOT INSTALLED"; done
+          run: |
+            uname -a; cc --version; c++ --version | head -1
+            r=0
+            sh .github/bsd-build.sh vendored $VENDORED || r=1
+            sh .github/bsd-build.sh system || r=1
+            exit $r
+
+  netbsd:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    name: netbsd-11.1
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Write IGRAPH_VERSION
+        run: git describe --tags --abbrev=9 | sed 's/^v//' > IGRAPH_VERSION && cat IGRAPH_VERSION
+      - uses: vmactions/netbsd-vm@v1
+        with:
+          release: '11.1'
+          envs: 'VENDORED'
+          copyback: false
+          prepare: |
+            for p in cmake ninja-build bison flex libxml2 gmp glpk arpack-ng lapack blas; do /usr/sbin/pkg_add $p || echo "PACKAGE $p NOT INSTALLED"; done
+          run: |
+            uname -a; cc --version; c++ --version | head -1
+            r=0
+            sh .github/bsd-build.sh vendored $VENDORED || r=1
+            sh .github/bsd-build.sh system || r=1
+            exit $r
+
+  omnios:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    name: omnios-r151060
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Write IGRAPH_VERSION
+        run: git describe --tags --abbrev=9 | sed 's/^v//' > IGRAPH_VERSION && cat IGRAPH_VERSION
+      - uses: vmactions/omnios-vm@v1
+        with:
+          release: 'r151060-build'
+          envs: 'VENDORED'
+          copyback: false
+          prepare: |
+            pkg publisher
+            for p in developer/build/cmake ooce/developer/cmake ooce/developer/ninja developer/parser/bison developer/lexer/flex library/libxml2 ooce/library/gmp library/gmp ooce/library/glpk ooce/library/openblas ooce/library/arpack-ng; do pkg install -v $p || echo "PACKAGE $p NOT INSTALLED (exit $?)"; done
+          run: |
+            cat /etc/release; uname -a
+            PATH=/opt/ooce/bin:$PATH; export PATH
+            CC=gcc; CXX=g++; export CC CXX
+            gcc --version | head -1; cmake --version | head -1
+            r=0
+            sh .github/bsd-build.sh vendored $VENDORED || r=1
+            sh .github/bsd-build.sh vendored-ext $VENDORED -DCMAKE_C_FLAGS=-D__EXTENSIONS__ -DCMAKE_CXX_FLAGS=-D__EXTENSIONS__ || r=1
+            sh .github/bsd-build.sh system || r=1
+            exit $r
