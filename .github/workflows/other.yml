@@ -85,6 +85,7 @@ jobs:
           r=0
           sh .github/bsd-build.sh vendored $VENDORED || r=1
           sh .github/bsd-build.sh system || r=1
+          if [ "${{ matrix.compiler }}" = homebrew-gcc ]; then sh .github/bsd-build.sh vendored-nographml $VENDORED -DIGRAPH_GRAPHML_SUPPORT=OFF || r=1; fi
           exit $r
 
   cygwin:
@@ -104,8 +105,10 @@ jobs:
         with:
           packages: cmake ninja gcc-core gcc-g++ make bison flex libxml2-devel libgmp-devel git
       - name: Write IGRAPH_VERSION
-        shell: bash
-        run: git describe --tags --abbrev=9 | sed 's/^v//' > IGRAPH_VERSION && cat IGRAPH_VERSION
+        shell: pwsh
+        run: |
+          ((git describe --tags --abbrev=9) -replace '^v','') | Out-File -Encoding ascii -NoNewline IGRAPH_VERSION
+          Get-Content IGRAPH_VERSION
       - name: Build and test
         env:
           VENDORED: ${{ env.VENDORED }}
