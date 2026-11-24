@@ -42,12 +42,7 @@ jobs:
             ${{ matrix.cc }} --version
             ${{ matrix.cxx }} --version
             cmake --version
-            echo '=== longjmp in headers'
-            grep -n 'longjmp\|NORETURN\|does_not_return\|redefine_extname' /usr/include/setjmp.h /usr/include/iso/setjmp_iso.h || true
-            grep -n 'NORETURN' /usr/include/sys/ccompile.h || true
-            for d in "" "-D_POSIX_C_SOURCE=200809L"; do for std in c99 c11; do echo "=== ${{ matrix.cc }} -std=$std $d -E"; printf '#include <setjmp.h>\n' | ${{ matrix.cc }} -std=$std $d -E - | grep -n 'longjmp' || true; done; done
-            printf '#include <setjmp.h>\njmp_buf b;\n__attribute__((__noreturn__)) void f(void) { longjmp(b, 1); }\n' > nr.c
-            for d in "" "-D_POSIX_C_SOURCE=200809L"; do for std in c99 gnu99 c11; do echo "=== compile test -std=$std $d"; ${{ matrix.cc }} -std=$std $d -Wall -c nr.c -o nr.o || true; done; done
+            sh .github/solaris-probe.sh ${{ matrix.cc }}
             exit 0
             mkdir build && cd build
             cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo \
