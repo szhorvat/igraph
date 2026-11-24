@@ -9,11 +9,7 @@ include(FindThreads)
 
 macro(find_dependencies)
   # Declare the list of dependencies that _may_ be vendored
-  set(VENDORABLE_DEPENDENCIES BLAS GLPK LAPACK ARPACK GMP PLFIT INFOMAP)
-
-  # Declare optional dependencies associated with IGRAPH_..._SUPPORT flags
-  # Note that GLPK and INFOMAP are both vendorable and optional
-  set(OPTIONAL_DEPENDENCIES GLPK OpenMP INFOMAP)
+  set(VENDORABLE_DEPENDENCIES BLAS GLPK LAPACK ARPACK GMP PLFIT)
 
   # Declare configuration options for dependencies
   tristate(IGRAPH_USE_INTERNAL_GMP "Compile igraph with internal Mini-GMP" AUTO)
@@ -23,9 +19,9 @@ macro(find_dependencies)
   tristate(IGRAPH_USE_INTERNAL_LAPACK "Compile igraph with internal LAPACK" AUTO)
   tristate(IGRAPH_USE_INTERNAL_PLFIT "Compile igraph with internal plfit" AUTO)
 
-  # Infomap currently does not support being built as an external library, so will
-  # only be supported through the internal vendored build
-  set(IGRAPH_USE_INTERNAL_INFOMAP ON)
+  # Infomap is always built from the vendored copy in vendor/infomap when
+  # IGRAPH_INFOMAP_SUPPORT is ON. It is not handled as a dependency here
+  # because linking to an external Infomap is not supported.
 
   # Declare dependencies
   set(REQUIRED_DEPENDENCIES "")
@@ -104,10 +100,6 @@ macro(find_dependencies)
     endif()
   endif()
 
-  if(NOT IGRAPH_INFOMAP_SUPPORT)
-    list(REMOVE_ITEM VENDORED_DEPENDENCIES INFOMAP)
-  endif()
-
   if(IGRAPH_GRAPHML_SUPPORT)
     list(APPEND REQUIRED_DEPENDENCIES LibXml2)
   endif()
@@ -153,7 +145,7 @@ macro(find_dependencies)
 
   # Export some aliases that will be used in config.h
   set(HAVE_GLPK ${GLPK_FOUND})
-  set(HAVE_INFOMAP ${INFOMAP_FOUND})
+  set(HAVE_INFOMAP ${IGRAPH_INFOMAP_SUPPORT})
   set(HAVE_GMP ${GMP_FOUND})
   set(HAVE_LIBXML ${LibXml2_FOUND})
 
