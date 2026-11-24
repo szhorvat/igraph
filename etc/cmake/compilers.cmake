@@ -6,7 +6,7 @@ include(CheckCCompilerFlag)
 # See:
 #  - https://pubs.opengroup.org/onlinepubs/007904875/functions/xsh_chap02_02.html
 #  - https://www.gnu.org/software/libc/manual/html_node/Feature-Test-Macros.html
-add_compile_definitions(_POSIX_C_SOURCE=200809L)
+add_compile_definitions(_POSIX_C_SOURCE=200809L _XOPEN_SOURCE=700) # TEST (ci/bsd): XSI for FreeBSD
 
 # On some Apple systems, with some compilers, defining _POSIX_C_SOURCE causes compilation
 # failures when including C++ headers. Defining _DARWIN_C_SOURCE explicitly usually fixes
@@ -17,6 +17,10 @@ add_compile_definitions(_POSIX_C_SOURCE=200809L)
 # so instead of restricting _POSIX_C_SOURCE to C, we define _DARWIN_C_SOURCE.
 if(APPLE)
   add_compile_definitions(_DARWIN_C_SOURCE)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "SunOS") # TEST (ci/bsd)
+  add_compile_definitions(__EXTENSIONS__)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "OpenBSD") # TEST (ci/bsd)
+  add_compile_definitions(_BSD_SOURCE)
 endif()
 
 if(MSVC)
