@@ -1,23 +1,18 @@
 include(CheckCCompilerFlag)
 
-# Enable POSIX features. This needs to be set here instead of in source files so
-# that it affects CMake-based feature tests.
+# Make the platform's POSIX and extension interfaces visible. This needs to be set
+# here instead of in source files so that it affects CMake-based feature tests.
+#
+# _GNU_SOURCE is used instead of a strict feature-test macro such as _POSIX_C_SOURCE.
+# On glibc, musl, newlib (Cygwin) and MinGW-w64 it enables everything, including POSIX
+# in strict ISO C modes; MinGW-w64 also selects its C99-conformant stdio. Other systems
+# (the BSDs, macOS, Solaris/illumos) ignore it and expose all interfaces by default.
+# Strict macros such as _POSIX_C_SOURCE would instead *hide* interfaces there, including
+# ones that the system's own C++ headers rely on, breaking the build.
 #
 # See:
-#  - https://pubs.opengroup.org/onlinepubs/007904875/functions/xsh_chap02_02.html
 #  - https://www.gnu.org/software/libc/manual/html_node/Feature-Test-Macros.html
-add_compile_definitions(_POSIX_C_SOURCE=200809L)
-
-# On some Apple systems, with some compilers, defining _POSIX_C_SOURCE causes compilation
-# failures when including C++ headers. Defining _DARWIN_C_SOURCE explicitly usually fixes
-# this. Refs: https://trac.macports.org/ticket/60655 and https://trac.macports.org/ticket/73145
-# This is claimed to be due to _POSIX_C_SOURCE disabling APIs that C++ headers rely on
-# on some systems. _DARWIN_C_SOURCE re-enables these APIs, but _GNU_SOURCE alone does not
-# necessarily do so. Using different global defined for C and C++ is problematic with CMake,
-# so instead of restricting _POSIX_C_SOURCE to C, we define _DARWIN_C_SOURCE.
-if(APPLE)
-  add_compile_definitions(_DARWIN_C_SOURCE)
-endif()
+add_compile_definitions(_GNU_SOURCE)
 
 if(MSVC)
   add_compile_options(/FS)
