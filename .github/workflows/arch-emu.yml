@@ -59,6 +59,13 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.ref_name }}
 
+      - name: Use classic sudo (setup-alpine needs sudo -E, which sudo-rs ignores)
+        shell: bash
+        run: |
+          ls -l /usr/bin/sudo* ; sudo --version | head -1
+          if [ -x /usr/bin/sudo.ws ]; then sudo update-alternatives --set sudo /usr/bin/sudo.ws; fi
+          sudo --version | head -1
+
       - name: Install dependencies
         id: alpine
         uses: jirutka/setup-alpine@v1
