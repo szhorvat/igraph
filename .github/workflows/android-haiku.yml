@@ -108,3 +108,29 @@ jobs:
             sh .github/bsd-build.sh vendored $VENDORED || r=1
             sh .github/bsd-build.sh system || r=1
             exit $r
+
+  cygwin:
+    runs-on: windows-latest
+    timeout-minutes: 180
+    name: cygwin
+    defaults:
+      run:
+        shell: C:\cygwin\bin\bash.exe --login -o igncr -eo pipefail '{0}'
+    steps:
+      - run: git config --global core.autocrlf input
+        shell: cmd
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: cygwin/cygwin-install-action@v6
+        with:
+          packages: cmake ninja gcc-core gcc-g++ make bison flex libxml2-devel libgmp-devel git
+      - name: Build and test
+        env:
+          VENDORED: ${{ env.VENDORED }}
+        run: |
+          cd "$(cygpath -u '${{ github.workspace }}')"
+          git config --global --add safe.directory '*'
+          git describe --tags --abbrev=9 | sed 's/^v//' > IGRAPH_VERSION; cat IGRAPH_VERSION
+          uname -a; gcc --version | head -1; cmake --version | head -1
+          sh .github/bsd-build.sh vendored $VENDORED
