@@ -10,8 +10,8 @@ name: Emulated
 # Failures of scheduled runs are reported by GitHub to the user who last
 # edited the cron line below, so keep that in mind when changing it.
 on:
-  schedule:
-    - cron: '0 2 * * *'
+  push:
+    branches: [ 'ci/gnu-source' ]
   workflow_dispatch:
 
 concurrency: ci-arch-emu-${{ github.ref }}
@@ -30,9 +30,6 @@ jobs:
 
   alpine:
     runs-on: ubuntu-latest
-
-    # Do not run in forks (necessary because of scheduled runs)
-    if: github.repository == 'igraph/igraph'
 
     defaults:
       run:
@@ -60,7 +57,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
-          ref: ${{ github.event_name == 'schedule' && 'main' || github.ref_name }}
+          ref: ${{ github.ref_name }}
 
       - name: Install dependencies
         id: alpine

@@ -1,0 +1,115 @@
+# Temporary portability workflow (not for merging): MSVC, macOS and Cygwin.
+# This run tests defining _GNU_SOURCE instead of _POSIX_C_SOURCE.
+name: Other
+
+on:
+  push:
+    branches: [ 'ci/gnu-source' ]
+  workflow_dispatch:
+
+env:
+  OMP_NUM_THREADS: 1
+  CTEST_PARALLEL_LEVEL: 4
+  VENDORED: >-
+    -DIGRAPH_USE_INTERNAL_BLAS=ON -DIGRAPH_USE_INTERNAL_LAPACK=ON
+    -DIGRAPH_USE_INTERNAL_ARPACK=ON -DIGRAPH_USE_INTERNAL_GLPK=ON
+    -DIGRAPH_USE_INTERNAL_GMP=ON -DIGRAPH_USE_INTERNAL_PLFIT=ON
+
+jobs:
+  msvc:
+    runs-on: windows-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: x64-static, arch: x64, triplet: x64-windows-static-md, shared: OFF }
+          - { name: x64-shared, arch: x64, triplet: x64-windows, shared: ON }
+          - { name: x86-static, arch: x86, triplet: x86-windows-static-md, shared: OFF }
+    name: msvc-${{ matrix.name }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Install dependencies
+        shell: cmd
+        run: |
+          choco install winflexbison3 || exit /b 1
+          %VCPKG_INSTALLATION_ROOT%\vcpkg.exe install libxml2:${{ matrix.triplet }} || exit /b 1
+      - name: Configure and build
+        shell: cmd
+        run: |
+          md build
+          cd build
+          for /f "delims=" %%i in ('"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -find VC\Auxiliary\Build\vcvarsall.bat') do call "%%i" ${{ matrix.arch }} || exit /b 1
+          set CXX=cl.exe
+          set CC=cl.exe
+          set "PATH=%VCPKG_INSTALLATION_ROOT%\installed\${{ matrix.triplet }}\bin;%PATH%"
+          cl.exe 2>&1 | findstr /C:"Version"
+          cmake .. -G Ninja %VENDORED% -DBUILD_SHARED_LIBS=${{ matrix.shared }} -DIGRAPH_ENABLE_TLS=ON -DIGRAPH_VERIFY_FINALLY_STACK=ON -DCMAKE_BUILD_TYPE=Release -DVCPKG_TARGET_TRIPLET=${{ matrix.triplet }} -DCMAKE_TOOLCHAIN_FILE=%VCPKG_INSTALLATION_ROOT%/scripts/buildsystems/vcpkg.cmake -DVCPKG_APPLOCAL_DEPS=OFF || exit /b 1
+          cmake --build . --target build_tests -- -k 0 > build.log 2>&1
+          set rc=%errorlevel%
+          findstr /R /C:"warning C" /C:"error C" /C:"error LNK" /C:"FAILED:" build.log
+          echo build exit code %rc%
+          exit /b %rc%
+      - name: Test
+        shell: cmd
+        run: |
+          set "PATH=%VCPKG_INSTALLATION_ROOT%\installed\${{ matrix.triplet }}\bin;%PATH%"
+          cd build && ctest --output-on-failure --timeout 120
+
+  macos:
+    runs-on: macos-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [ apple-clang, homebrew-gcc ]
+    name: macos-${{ matrix.compiler }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Install dependencies
+        run: brew install ninja bison flex glpk gmp arpack libxml2 suite-sparse || true
+      - name: Build and test
+        run: |
+          sw_vers; xcrun --show-sdk-version
+          export PATH="$(brew --prefix bison)/bin:$(brew --prefix flex)/bin:$PATH"
+          if [ "${{ matrix.compiler }}" = homebrew-gcc ]; then
+            brew install gcc || true
+            CC=$(ls "$(brew --prefix)"/bin/gcc-[0-9]* | sort -V | tail -1); CXX=${CC/gcc-/g++-}
+            export CC CXX
+          fi
+          ${CC:-cc} --version | head -1; ${CXX:-c++} --version | head -1
+          r=0
+          sh .github/bsd-build.sh vendored $VENDORED || r=1
+          sh .github/bsd-build.sh system || r=1
+          exit $r
+
+  cygwin:
+    runs-on: windows-latest
+    timeout-minutes: 180
+    name: cygwin
+    defaults:
+      run:
+        shell: C:\cygwin\bin\bash.exe --login -o igncr -eo pipefail '{0}'
+    steps:
+      - run: git config --global core.autocrlf input
+        shell: cmd
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: cygwin/cygwin-install-action@v6
+        with:
+          packages: cmake ninja gcc-core gcc-g++ make bison flex libxml2-devel libgmp-devel git
+      - name: Write IGRAPH_VERSION
+        shell: bash
+        run: git describe --tags --abbrev=9 | sed 's/^v//' > IGRAPH_VERSION && cat IGRAPH_VERSION
+      - name: Build and test
+        env:
+          VENDORED: ${{ env.VENDORED }}
+        run: |
+          cd "$(cygpath -u '${{ github.workspace }}')"
+          uname -a; gcc --version | head -1; cmake --version | head -1
+          sh .github/bsd-build.sh vendored $VENDORED
