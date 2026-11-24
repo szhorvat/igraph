@@ -1,6 +1,8 @@
 #!/bin/sh
 # Temporary probe: why does glpk_support.c not warn about noreturn + longjmp while qhull does?
 CC=$1
+PATH=/usr/gnu/bin:$PATH; export PATH
+which grep sed
 echo "=== sys/ccompile.h: __sun_attr__ and conditions"
 grep -n '__sun_attr\|^#if\|^#else\|^#endif\|^#elif' /usr/include/sys/ccompile.h | sed -n '1,80p'
 echo "=== sys/feature_tests.h: strict-mode macros"
