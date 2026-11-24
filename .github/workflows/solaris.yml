@@ -48,8 +48,11 @@ jobs:
               -DCMAKE_MAKE_PROGRAM=gmake \
               -DIGRAPH_USE_INTERNAL_BLAS=ON -DIGRAPH_USE_INTERNAL_LAPACK=ON \
               -DIGRAPH_USE_INTERNAL_ARPACK=ON -DIGRAPH_USE_INTERNAL_GLPK=ON \
-              -DIGRAPH_USE_INTERNAL_PLFIT=ON -DIGRAPH_VERIFY_FINALLY_STACK=ON \
-              -DIGRAPH_WARNINGS_AS_ERRORS=OFF
-            gmake -k -j4 build_tests 2>&1 | tee build.log | grep -E 'warning:|error:' | sort | uniq -c | sort -rn | head -100 || true
-            gmake -j4 build_tests
+              -DIGRAPH_USE_INTERNAL_PLFIT=ON -DIGRAPH_USE_INTERNAL_GMP=ON \
+              -DIGRAPH_VERIFY_FINALLY_STACK=ON
+            rc=0; gmake -k -j4 build_tests > build.log 2>&1 || rc=$?
+            echo "build exit code: $rc"
+            grep 'warning:' build.log | sort | uniq -c | sort -rn | head -100 || true
+            grep 'error' build.log | sort | uniq -c | head -100 || true
+            [ $rc -eq 0 ]
             OMP_NUM_THREADS=1 ctest -j4 --output-on-failure --timeout 600
