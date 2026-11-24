@@ -1,0 +1,108 @@
+# Temporary portability workflow (not for merging): Android NDK (bionic) and Haiku.
+# This run tests defining _GNU_SOURCE instead of _POSIX_C_SOURCE.
+name: Android-Haiku
+
+on:
+  push:
+    branches: [ 'ci/android-haiku' ]
+  workflow_dispatch:
+
+env:
+  OMP_NUM_THREADS: 1
+  VENDORED: >-
+    -DIGRAPH_USE_INTERNAL_BLAS=ON -DIGRAPH_USE_INTERNAL_LAPACK=ON
+    -DIGRAPH_USE_INTERNAL_ARPACK=ON -DIGRAPH_USE_INTERNAL_GLPK=ON
+    -DIGRAPH_USE_INTERNAL_GMP=ON -DIGRAPH_USE_INTERNAL_PLFIT=ON
+
+jobs:
+  android-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { abi: arm64-v8a, api: 24 }
+          - { abi: arm64-v8a, api: 35 }
+          - { abi: armeabi-v7a, api: 24 }
+          - { abi: x86, api: 24 }
+    name: android-build-${{ matrix.abi }}-api${{ matrix.api }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Build
+        run: |
+          sudo apt-get install -y ninja-build bison flex >/dev/null
+          cat $ANDROID_NDK_LATEST_HOME/source.properties
+          cmake -S . -B build-android -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo $VENDORED -DIGRAPH_VERIFY_FINALLY_STACK=ON -DIGRAPH_ENABLE_TLS=ON \
+            -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_LATEST_HOME/build/cmake/android.toolchain.cmake -DANDROID_ABI=${{ matrix.abi }} -DANDROID_PLATFORM=${{ matrix.api }} -DANDROID_STL=c++_static -DF2C_EXTERNAL_ARITH_HEADER=$GITHUB_WORKSPACE/.github/arith-x86_64-linux.h > cfg.log 2>&1 || { tail -40 cfg.log; exit 1; }
+          sed -n '/Build configuration/,/Diff tool/p' cfg.log
+          grep -E '^(HAVE_[A-Z_]*):' build-android/CMakeCache.txt | sort
+          cmake --build build-android --target build_tests -- -k 0 > build.log 2>&1; rc=$?
+          echo "build exit code $rc; warnings:"; grep 'warning:' build.log | sort | uniq -c | sort -rn | head -40
+          echo "errors:"; grep -E 'error:|FAILED:' build.log | sort | uniq -c | sort -rn | head -40
+          exit $rc
+
+  android-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: x86_64, abi: x86_64, api: 24 }
+          - { arch: x86_64, abi: x86_64, api: 35 }
+          - { arch: x86, abi: x86, api: 24 }
+    name: android-test-${{ matrix.abi }}-api${{ matrix.api }}
+    env:
+      ABI: ${{ matrix.abi }}
+      API: ${{ matrix.api }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Install tools
+        run: sudo apt-get install -y ninja-build bison flex >/dev/null
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Build and test on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          arch: ${{ matrix.arch }}
+          target: default
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
+          script: bash .github/android-test.sh
+
+  haiku:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        release: [ 'r1beta5', 'r1beta6' ]
+    name: haiku-${{ matrix.release }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Write IGRAPH_VERSION
+        run: git describe --tags --abbrev=9 | sed 's/^v//' > IGRAPH_VERSION && cat IGRAPH_VERSION
+      - uses: vmactions/haiku-vm@v1
+        with:
+          release: ${{ matrix.release }}
+          envs: 'VENDORED'
+          copyback: false
+          prepare: |
+            for p in cmake ninja bison flex libxml2_devel gmp_devel glpk_devel openblas_devel arpack_ng_devel lapack_devel; do pkgman install -y $p || echo "PACKAGE $p NOT INSTALLED"; done
+          run: |
+            uname -a; gcc --version | head -1; g++ --version | head -1; cmake --version | head -1
+            r=0
+            sh .github/bsd-build.sh vendored $VENDORED || r=1
+            sh .github/bsd-build.sh system || r=1
+            exit $r
