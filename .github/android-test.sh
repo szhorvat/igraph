@@ -32,9 +32,13 @@ grep -A10 "arith.h" build.log | head -14
 [ $rc -eq 0 ] || { echo "RESULT android: BUILD FAILED"; exit 1; }
 ( cd build-android/tests && find . -maxdepth 1 -type f -perm -u+x | tar -cf /tmp/bin.tar -T - )
 adb push /tmp/bin.tar /data/local/tmp/ >/dev/null && adb shell "cd /data/local/tmp/bin && tar -xf ../bin.tar"
+# The test binaries link to the NDK's shared libomp.so, which is not on the device.
+case $ABI in x86_64) OMPARCH=x86_64;; x86) OMPARCH=i386;; esac
+OMPLIB=$(find "$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/lib/clang" -path "*/lib/linux/$OMPARCH/libomp.so" | head -1)
+echo "libomp: $OMPLIB"; adb push "$OMPLIB" /data/local/tmp/bin/ >/dev/null
 echo "--- diagnostics"
 adb shell "ls -l /data/local/tmp/bin | head -5; ls /data/local/tmp/bin | wc -l; ls /data/local/tmp/ws/tests | head -3"
-adb shell "/data/local/tmp/bin/test_bitset; echo rc=\$?" | head -20
+adb shell "LD_LIBRARY_PATH=/data/local/tmp/bin /data/local/tmp/bin/test_bitset; echo rc=\$?" | head -20
 ( cd build-android && ctest -V -R '^test::bitset$' 2>&1 | tail -30; ctest --output-on-failure -R '^example::igraph_version$' 2>&1 | tail -30 )
 echo "--- end diagnostics"
 cd build-android && ctest -j 2 --timeout 600 > ctest.log 2>&1; rc=$?

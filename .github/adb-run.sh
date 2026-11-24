@@ -8,4 +8,4 @@ case "$path" in
   *) adb push "$path" /data/local/tmp/bin/ >/dev/null 2>&1 ;;
 esac
 rel=${PWD#"$GITHUB_WORKSPACE"/}
-exec adb shell "cd /data/local/tmp/ws/$rel 2>/dev/null || cd /data/local/tmp/ws; OMP_NUM_THREADS=1 /data/local/tmp/bin/$exe $*"
+exec adb shell "cd /data/local/tmp/ws/$rel 2>/dev/null || cd /data/local/tmp/ws; OMP_NUM_THREADS=1 LD_LIBRARY_PATH=/data/local/tmp/bin /data/local/tmp/bin/$exe $*"
