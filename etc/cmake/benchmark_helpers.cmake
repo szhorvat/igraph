@@ -13,6 +13,9 @@ function(add_benchmark NAME NAMESPACE)
   target_include_directories(
     ${TARGET_NAME} PRIVATE
     $<$<BOOL:${PLFIT_IS_VENDORED}>:$<TARGET_PROPERTY:plfit_vendored,INCLUDE_DIRECTORIES>>
+  )
+  target_include_directories(
+    ${TARGET_NAME} SYSTEM PRIVATE
     $<$<BOOL:${PLFIT_INCLUDE_DIR}>:${PLFIT_INCLUDE_DIR}>
   )
 

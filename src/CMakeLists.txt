@@ -379,8 +379,14 @@ target_include_directories(
   "$<$<BOOL:${GLPK_IS_VENDORED}>:$<TARGET_PROPERTY:glpk_vendored,INCLUDE_DIRECTORIES>>"
   "$<$<BOOL:${INFOMAP_IS_VENDORED}>:$<TARGET_PROPERTY:infomap_vendored,INCLUDE_DIRECTORIES>>"
   "$<$<BOOL:${PLFIT_IS_VENDORED}>:$<TARGET_PROPERTY:plfit_vendored,INCLUDE_DIRECTORIES>>"
+)
 
-  # Include paths for dependencies
+# Include paths for external dependencies. These are marked as SYSTEM, the same
+# way as imported targets would be, so that warnings from third-party headers
+# do not break the build with -Werror.
+target_include_directories(
+  igraph
+  SYSTEM PRIVATE
   "$<$<BOOL:${GLPK_INCLUDE_DIR}>:${GLPK_INCLUDE_DIR}>"
   "$<$<BOOL:${INFOMAP_INCLUDE_DIR}>:${INFOMAP_INCLUDE_DIR}>"
   "$<$<BOOL:${GMP_INCLUDE_DIR}>:${GMP_INCLUDE_DIR}>"

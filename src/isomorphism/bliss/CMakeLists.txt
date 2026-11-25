@@ -20,6 +20,12 @@ target_include_directories(
   ${PROJECT_SOURCE_DIR}/vendor
   ${PROJECT_BINARY_DIR}/include
   ${PROJECT_BINARY_DIR}/src
+)
+
+# External dependency: SYSTEM include, see src/CMakeLists.txt
+target_include_directories(
+  bliss
+  SYSTEM PRIVATE
   $<$<BOOL:${GMP_INCLUDE_DIR}>:${GMP_INCLUDE_DIR}>
 )
 
