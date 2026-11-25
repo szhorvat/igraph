@@ -1,0 +1,48 @@
+# Temporary portability workflow (not for merging): MSVC, macOS and Cygwin.
+# This run tests SYSTEM includes for external dependencies (macOS only).
+name: Other
+
+on:
+  push:
+    branches: [ 'ci/system-includes' ]
+  workflow_dispatch:
+
+env:
+  OMP_NUM_THREADS: 1
+  CTEST_PARALLEL_LEVEL: 4
+  VENDORED: >-
+    -DIGRAPH_USE_INTERNAL_BLAS=ON -DIGRAPH_USE_INTERNAL_LAPACK=ON
+    -DIGRAPH_USE_INTERNAL_ARPACK=ON -DIGRAPH_USE_INTERNAL_GLPK=ON
+    -DIGRAPH_USE_INTERNAL_GMP=ON -DIGRAPH_USE_INTERNAL_PLFIT=ON
+
+jobs:
+  macos:
+    runs-on: macos-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [ apple-clang, homebrew-gcc ]
+    name: macos-${{ matrix.compiler }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Install dependencies
+        run: brew install ninja bison flex glpk gmp arpack libxml2 suite-sparse || true
+      - name: Build and test
+        run: |
+          sw_vers; xcrun --show-sdk-version
+          export PATH="$(brew --prefix bison)/bin:$(brew --prefix flex)/bin:$PATH"
+          if [ "${{ matrix.compiler }}" = homebrew-gcc ]; then
+            brew install gcc || true
+            CC=$(ls "$(brew --prefix)"/bin/gcc-[0-9]* | sort -V | tail -1); CXX=${CC/gcc-/g++-}
+            export CC CXX
+          fi
+          ${CC:-cc} --version | head -1; ${CXX:-c++} --version | head -1
+          r=0
+          sh .github/bsd-build.sh vendored $VENDORED || r=1
+          sh .github/bsd-build.sh system || r=1
+          if [ "${{ matrix.compiler }}" = homebrew-gcc ]; then sh .github/bsd-build.sh vendored-nographml $VENDORED -DIGRAPH_GRAPHML_SUPPORT=OFF || r=1; fi
+          exit $r
+
