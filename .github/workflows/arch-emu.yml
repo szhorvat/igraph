@@ -29,7 +29,7 @@ env:
 jobs:
 
   alpine:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     # Do not run in forks (necessary because of scheduled runs)
     if: github.repository == 'igraph/igraph'
