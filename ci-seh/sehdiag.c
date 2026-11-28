@@ -63,7 +63,9 @@ __attribute__((noinline)) static void probe(void) {
 }
 
 __attribute__((noinline)) static void thrower(void) {
+#ifndef NO_PROBE
     probe();
+#endif
     longjmp(buf, 1);
 }
 
@@ -72,7 +74,11 @@ __attribute__((noinline)) static int victim(volatile char *sink) {
 #ifndef NO_XMM
     __asm__ volatile ("" ::: "xmm6");   /* forces a save of xmm6 */
 #endif
+#ifndef NO_PROBE
+#ifndef NO_PROBE
     victim_rbp = __builtin_frame_address(0);
+#endif
+#endif
     memset(big, 1, sizeof big);
     __asm__ volatile ("" :: "r" (big) : "memory");   /* keep the array */
     *sink = big[FRAME / 2];

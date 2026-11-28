@@ -28,8 +28,11 @@ jobs:
           gcc -O2 -S -DFRAME=3000 ci-seh/sehdiag.c -o - | awk '/seh_proc\tvictim/,/seh_endprologue/'
           echo "--- Clang prologue of victim(), FRAME=3000"
           clang -O2 -S -DFRAME=3000 ci-seh/sehdiag.c -o - | awk '/^victim:/,/seh_endprologue/'
-      - name: New mingw-w64 setjmp macro
+      - name: New mingw-w64 setjmp macro, no __builtin_frame_address in the caller
         run: |
-          gcc -O2 -S -DFRAME=3000 -DNEW_MACRO ci-seh/sehdiag.c -o - | awk '/seh_proc\tvictim/,/seh_endprologue/'
-          ci-seh/run.sh gcc_new3072 200 gcc -DFRAME=3072 -DNEW_MACRO
-          ci-seh/run.sh gcc_new1536 200 gcc -DFRAME=1536 -DNEW_MACRO
+          gcc -O2 -S -DFRAME=3000 -DNEW_MACRO -DNO_PROBE ci-seh/sehdiag.c -o - | awk '/seh_proc\tvictim/,/seh_endprologue/'
+          for f in 1536 3072; do for v in "" "-DNEW_MACRO"; do
+            gcc -O2 -DNO_PROBE -DFRAME=$f $v ci-seh/sehdiag.c -o np.exe; c=0
+            for i in $(seq 200); do ./np.exe > /dev/null 2>&1 || c=$((c+1)); done
+            echo "FRAME=$f $v: $c of 200 crashed"
+          done; done
