@@ -23,6 +23,27 @@
 
 #include "config.h" /* HAVE__BITSCAN* */
 
+/* TEMPORARY (CI branch only): report which implementations are compiled. */
+#ifdef _MSC_VER
+#  ifdef HAVE__BITSCANFORWARD
+#    pragma message("igraph-bitset-probe: _BitScanForward enabled")
+#  endif
+#  ifdef HAVE__BITSCANREVERSE
+#    pragma message("igraph-bitset-probe: _BitScanReverse enabled")
+#  endif
+#  if defined(HAVE__BITSCANFORWARD64) && IGRAPH_INTEGER_SIZE == 64
+#    pragma message("igraph-bitset-probe: _BitScanForward64 enabled")
+#  endif
+#  if defined(HAVE__BITSCANREVERSE64) && IGRAPH_INTEGER_SIZE == 64
+#    pragma message("igraph-bitset-probe: _BitScanReverse64 enabled")
+#  endif
+#  ifdef IGRAPH_I_HAVE_POPCNT_INTRINSIC
+#    pragma message("igraph-bitset-probe: __popcnt intrinsic enabled")
+#  else
+#    pragma message("igraph-bitset-probe: SWAR popcount fallback")
+#  endif
+#endif
+
 igraph_int_t igraph_i_ctz32(igraph_uint_t x) {
 #ifdef HAVE__BITSCANFORWARD
     unsigned long index;

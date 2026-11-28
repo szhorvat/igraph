@@ -1,0 +1,41 @@
+# Temporary workflow: verify the MSVC bitset intrinsics. Not for merging.
+name: MSVC bitset
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, x86]
+        cflags: ['', '/arch:AVX']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install flex and bison
+        run: choco install winflexbison3
+        shell: cmd
+
+      - name: Configure and build
+        shell: cmd
+        run: |
+          for /f "delims=" %%i in ('"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -find VC\Auxiliary\Build\vcvarsall.bat') do call "%%i" ${{ matrix.arch }} || exit /b 1
+          set CC=cl.exe
+          set CXX=cl.exe
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release "-DCMAKE_C_FLAGS=${{ matrix.cflags }}" "-DCMAKE_CXX_FLAGS=${{ matrix.cflags }}" ^
+            -DIGRAPH_USE_INTERNAL_BLAS=ON -DIGRAPH_USE_INTERNAL_LAPACK=ON -DIGRAPH_USE_INTERNAL_ARPACK=ON ^
+            -DIGRAPH_USE_INTERNAL_GLPK=ON -DIGRAPH_USE_INTERNAL_GMP=ON -DIGRAPH_USE_INTERNAL_PLFIT=ON ^
+            -DIGRAPH_GRAPHML_SUPPORT=OFF -DIGRAPH_OPENMP_SUPPORT=OFF -DIGRAPH_VERIFY_FINALLY_STACK=ON || exit /b 1
+          findstr /C:"BITSCAN" build\src\config.h
+          findstr /C:"IGRAPH_INTEGER_SIZE" build\include\igraph_config.h
+          cmake --build build --target test_bitset test_reachability || exit /b 1
+
+      - name: Test
+        shell: cmd
+        run: ctest --test-dir build --output-on-failure -R "bitset|reachability"
