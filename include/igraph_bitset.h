@@ -179,15 +179,22 @@ IGRAPH_BEGIN_C_DECLS
     /* Non-GNU compilers, i.e. MSVC and others. Attempt to use MSVC intrinsics
      * when available, otherwise use fallback implementation. */
 
+    /* __popcnt() and __popcnt64() compile for any x86/x64 target, but they
+     * always emit the POPCNT instruction, which older CPUs lack. Use them only
+     * when the target is known to support POPCNT. All CPUs with AVX do. */
+    #if defined(_MSC_VER) && defined(__AVX__) && !defined(_M_ARM64EC) && (defined(_M_X64) || defined(_M_IX86))
+        #define IGRAPH_I_HAVE_POPCNT_INTRINSIC
+    #endif
+
     #if IGRAPH_INTEGER_SIZE == 32
-        #ifdef HAVE__POPCNT
+        #ifdef IGRAPH_I_HAVE_POPCNT_INTRINSIC
             #define IGRAPH_I_POPCOUNT32(x) __popcnt(x)
         #else
             igraph_int_t igraph_i_popcnt(igraph_uint_t x);
             #define IGRAPH_I_POPCOUNT32(x) igraph_i_popcnt(x)
         #endif
     #elif IGRAPH_INTEGER_SIZE == 64
-        #ifdef HAVE__POPCNT64
+        #if defined(IGRAPH_I_HAVE_POPCNT_INTRINSIC) && defined(_M_X64)
             #define IGRAPH_I_POPCOUNT64(x) __popcnt64(x)
         #else
             igraph_int_t igraph_i_popcnt(igraph_uint_t x);

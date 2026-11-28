@@ -73,6 +73,7 @@
 - Performance improvement for `igraph_count_reachable()`. Thanks to Jonathan Berg @jberg5 for contributing this in #2926!
 - Performance improvement for `igraph_simple_cycles()` and `igraph_simple_cycles_callback()` on large graphs where the search starts from many vertices, such as sparse graphs or graphs with many small cycles. The bookkeeping done for each start vertex no longer scales with the size of the whole graph (PR #2947).
 - The build system now uses the behaviour of CMake policies up to CMake 4.5.
+- With MSVC, bitset operations that search for set bits, such as `igraph_bitset_countl_zero()` and `igraph_bitset_countr_zero()`, now use the `_BitScanForward` and `_BitScanReverse` intrinsics. Due to misnamed configuration macros, slow fallback implementations were used instead since bitsets were added in 0.10.12. `igraph_bitset_popcount()` now uses a faster, branch-free fallback implementation with MSVC. MSVC's `__popcnt` intrinsics are used only when targeting AVX (`/arch:AVX` or higher), as they require a CPU with the POPCNT instruction.
 
 ## [1.0.1]
 
