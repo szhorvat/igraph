@@ -21,6 +21,16 @@
 #include "igraph_bitset.h"
 #include "igraph_memory.h"
 
+#include "config.h" /* HAVE__BITSCAN* */
+
+/* The configure checks for these intrinsics include <intrin.h>. MinGW also
+ * passes these checks, but unlike MSVC, it does not get <intrin.h> from
+ * igraph_bitset.h. */
+#if defined(HAVE__BITSCANFORWARD) || defined(HAVE__BITSCANREVERSE) || \
+    defined(HAVE__BITSCANFORWARD64) || defined(HAVE__BITSCANREVERSE64)
+    #include <intrin.h>
+#endif
+
 igraph_int_t igraph_i_ctz32(igraph_uint_t x) {
 #ifdef HAVE__BITSCANFORWARD
     unsigned long index;
@@ -36,7 +46,7 @@ igraph_int_t igraph_i_ctz32(igraph_uint_t x) {
 }
 
 igraph_int_t igraph_i_clz32(igraph_uint_t x) {
-#ifdef HAVE_BITSCANREVERSE
+#ifdef HAVE__BITSCANREVERSE
     unsigned long index;
     return _BitScanReverse(&index, x) ? 31 - index : 32;
 #else
@@ -49,19 +59,29 @@ igraph_int_t igraph_i_clz32(igraph_uint_t x) {
 #endif
 }
 
+/* Portable popcount, used when no suitable compiler builtin or intrinsic
+ * is available. Branch-free SWAR algorithm, see e.g.
+ * https://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel */
 igraph_int_t igraph_i_popcnt(igraph_uint_t x) {
-    igraph_int_t result = 0;
-    while (x) {
-        result++;
-        x = x & (x - 1);
-    }
-    return result;
+#if IGRAPH_INTEGER_SIZE == 32
+    x = x - ((x >> 1) & UINT32_C(0x55555555));
+    x = (x & UINT32_C(0x33333333)) + ((x >> 2) & UINT32_C(0x33333333));
+    x = (x + (x >> 4)) & UINT32_C(0x0F0F0F0F);
+    return (igraph_int_t) ((x * UINT32_C(0x01010101)) >> 24);
+#elif IGRAPH_INTEGER_SIZE == 64
+    x = x - ((x >> 1) & UINT64_C(0x5555555555555555));
+    x = (x & UINT64_C(0x3333333333333333)) + ((x >> 2) & UINT64_C(0x3333333333333333));
+    x = (x + (x >> 4)) & UINT64_C(0x0F0F0F0F0F0F0F0F);
+    return (igraph_int_t) ((x * UINT64_C(0x0101010101010101)) >> 56);
+#else
+    #error "Unexpected IGRAPH_INTEGER_SIZE value."
+#endif
 }
 
 /* Fallbacks for 64-bit word (and igraph_int_t/igraph_uint_t) size */
 #if IGRAPH_INTEGER_SIZE == 64
 igraph_int_t igraph_i_ctz64(igraph_uint_t x) {
-#ifdef HAVE_BITSCANFORWARD64
+#ifdef HAVE__BITSCANFORWARD64
     unsigned long index;
     return _BitScanForward64(&index, x) ? index : 64;
 #else
@@ -75,7 +95,7 @@ igraph_int_t igraph_i_ctz64(igraph_uint_t x) {
 }
 
 igraph_int_t igraph_i_clz64(igraph_uint_t x) {
-#ifdef HAVE_BITSCANREVERSE64
+#ifdef HAVE__BITSCANREVERSE64
     unsigned long index;
     return _BitScanReverse64(&index, x) ? 63 - index : 64;
 #else
