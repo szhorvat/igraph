@@ -28,12 +28,8 @@ jobs:
           gcc -O2 -S -DFRAME=3000 ci-seh/sehdiag.c -o - | awk '/seh_proc\tvictim/,/seh_endprologue/'
           echo "--- Clang prologue of victim(), FRAME=3000"
           clang -O2 -S -DFRAME=3000 ci-seh/sehdiag.c -o - | awk '/^victim:/,/seh_endprologue/'
-      - name: GCC, xmm6 saved, various frame sizes
+      - name: New mingw-w64 setjmp macro
         run: |
-          for f in 16 512 1024 1536 2048 3072; do ci-seh/run.sh gcc$f 200 gcc -DFRAME=$f; done
-      - name: Controls
-        run: |
-          ci-seh/run.sh gcc_noxmm 200 gcc -DFRAME=1536 -DNO_XMM
-          ci-seh/run.sh gcc_nonseh 200 gcc -DFRAME=1536 -D__USE_MINGW_SETJMP_NON_SEH
-          ci-seh/run.sh clang 200 clang -DFRAME=1536
-          ci-seh/run.sh clang_big 100 clang -DFRAME=3072
+          gcc -O2 -S -DFRAME=3000 -DNEW_MACRO ci-seh/sehdiag.c -o - | awk '/seh_proc\tvictim/,/seh_endprologue/'
+          ci-seh/run.sh gcc_new3072 200 gcc -DFRAME=3072 -DNEW_MACRO
+          ci-seh/run.sh gcc_new1536 200 gcc -DFRAME=1536 -DNEW_MACRO

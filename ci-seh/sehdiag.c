@@ -16,6 +16,11 @@
 #include <string.h>
 #include <windows.h>
 
+#ifdef NEW_MACRO /* mingw-w64 commit 9138400f, not yet in MSYS2 */
+#undef setjmp
+#define setjmp(BUF) _setjmp((BUF), __builtin_stack_address())
+#endif
+
 #ifndef FRAME
 #define FRAME 5000
 #endif
