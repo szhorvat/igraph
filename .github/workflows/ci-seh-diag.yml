@@ -30,10 +30,10 @@ jobs:
           clang -O2 -S -DFRAME=3000 ci-seh/sehdiag.c -o - | awk '/^victim:/,/seh_endprologue/'
       - name: GCC, xmm6 saved, various frame sizes
         run: |
-          for f in 256 1024 2048 3072 4096 6144; do ci-seh/run.sh gcc$f 100 gcc -DFRAME=$f; done
+          for f in 16 512 1024 1536 2048 3072; do ci-seh/run.sh gcc$f 200 gcc -DFRAME=$f; done
       - name: Controls
         run: |
-          ci-seh/run.sh gcc_noxmm 100 gcc -DFRAME=6144 -DNO_XMM
-          ci-seh/run.sh gcc_nonseh 100 gcc -DFRAME=6144 -D__USE_MINGW_SETJMP_NON_SEH
-          ci-seh/run.sh clang 100 clang -DFRAME=6144
-          ci-seh/run.sh clang_small 100 clang -DFRAME=1024
+          ci-seh/run.sh gcc_noxmm 200 gcc -DFRAME=1536 -DNO_XMM
+          ci-seh/run.sh gcc_nonseh 200 gcc -DFRAME=1536 -D__USE_MINGW_SETJMP_NON_SEH
+          ci-seh/run.sh clang 200 clang -DFRAME=1536
+          ci-seh/run.sh clang_big 100 clang -DFRAME=3072

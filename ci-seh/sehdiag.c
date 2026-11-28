@@ -69,6 +69,7 @@ __attribute__((noinline)) static int victim(volatile char *sink) {
 #endif
     victim_rbp = __builtin_frame_address(0);
     memset(big, 1, sizeof big);
+    __asm__ volatile ("" :: "r" (big) : "memory");   /* keep the array */
     *sink = big[FRAME / 2];
     if (setjmp(buf)) {
         return 1;
