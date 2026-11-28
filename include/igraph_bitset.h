@@ -179,10 +179,13 @@ IGRAPH_BEGIN_C_DECLS
     /* Non-GNU compilers, i.e. MSVC and others. Attempt to use MSVC intrinsics
      * when available, otherwise use fallback implementation. */
 
-    /* __popcnt() and __popcnt64() compile for any x86/x64 target, but they
-     * always emit the POPCNT instruction, which older CPUs lack. Use them only
-     * when the target is known to support POPCNT. All CPUs with AVX do. */
-    #if defined(_MSC_VER) && defined(__AVX__) && !defined(_M_ARM64EC) && (defined(_M_X64) || defined(_M_IX86))
+    /* With MSVC, __popcnt() and __popcnt64() compile even for targets that do
+     * not support this instruction. We enable these only for targets for which are
+     * confirmed to support the instruction, and accept a software fallback for targets
+     * where this cannot be checked in any simple way. The following check is borrowed
+     * from the Microsoft STL, see
+     * https://github.com/microsoft/STL/blob/0cabaf3c7e0a73fe3040aabce40cd8833e80392b/stl/inc/__msvc_bit_utils.hpp#L273-L283 */
+    #if defined(_MSC_VER) && (defined(__AVX__) || defined(_M_ARM64) || defined(_M_ARM64EC))
         #define IGRAPH_I_HAVE_POPCNT_INTRINSIC
     #endif
 
