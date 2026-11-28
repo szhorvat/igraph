@@ -160,51 +160,51 @@ IGRAPH_BEGIN_C_DECLS
  */
 #define IGRAPH_BIT_NSLOTS(nbits) ((nbits + IGRAPH_INTEGER_SIZE - (igraph_int_t)(1)) / IGRAPH_INTEGER_SIZE)
 
-
-#if defined(__GNUC__)
+/* __GNUC__ already catch Clang in GNU mode. __clang__ also catches clang-cl. */
+#if defined(__GNUC__) || defined(__clang__)
     /* GCC and Clang support these six builtins from very early versions. */
 
-    #define IGRAPH_I_POPCOUNT32(x) __builtin_popcount(x)
-    #define IGRAPH_I_POPCOUNT64(x) __builtin_popcountll(x)
+    #if IGRAPH_INTEGER_SIZE == 32
+        #define IGRAPH_POPCOUNT(x) __builtin_popcount(x)
+    #elif IGRAPH_INTEGER_SIZE == 64
+        #define IGRAPH_POPCOUNT(x) __builtin_popcountll(x)
+    #endif
 
     /* The result of the following four builtins is undefined for zero input,
      * therefore we handle this specially.
      * See https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html */
-    #define IGRAPH_I_CTZ32(x) (x ? __builtin_ctz(x) : 32)
-    #define IGRAPH_I_CTZ64(x) (x ? __builtin_ctzll(x) : 64)
-    #define IGRAPH_I_CLZ32(x) (x ? __builtin_clz(x) : 32)
-    #define IGRAPH_I_CLZ64(x) (x ? __builtin_clzll(x) : 64)
+    #define IGRAPH_I_CTZ32(x) ((x) ? __builtin_ctz(x) : 32)
+    #define IGRAPH_I_CTZ64(x) ((x) ? __builtin_ctzll(x) : 64)
+    #define IGRAPH_I_CLZ32(x) ((x) ? __builtin_clz(x) : 32)
+    #define IGRAPH_I_CLZ64(x) ((x) ? __builtin_clzll(x) : 64)
 
 #else
     /* Non-GNU compilers, i.e. MSVC and others. Attempt to use MSVC intrinsics
-     * when available, otherwise use fallback implementation. */
+     * when available and safe, otherwise use a fallback implementation. */
 
     /* With MSVC, __popcnt() and __popcnt64() compile even for targets that do
-     * not support this instruction. We enable these only for targets for which are
-     * confirmed to support the instruction, and accept a software fallback for targets
-     * where this cannot be checked in any simple way. The following check is borrowed
-     * from the Microsoft STL, see
-     * https://github.com/microsoft/STL/blob/0cabaf3c7e0a73fe3040aabce40cd8833e80392b/stl/inc/__msvc_bit_utils.hpp#L273-L283 */
-    #if defined(_MSC_VER) && (defined(__AVX__) || defined(_M_ARM64) || defined(_M_ARM64EC))
-        #define IGRAPH_I_HAVE_POPCNT_INTRINSIC
+     * not support these instructiosn. We enable these only for targets which are
+     * confirmed to support them, and accept a software fallback for targets
+     * where this cannot be checked in any simple way. The following check is partly
+     * borrowed from the Microsoft STL, see
+     * https://github.com/microsoft/STL/blob/0cabaf3c7e0a73fe3040aabce40cd8833e80392b/stl/inc/__msvc_bit_utils.hpp#L273-L283 
+     * 
+     * MSVC added the ARM64 and ARM64EC intrinsics in Visual Studio 2022 17.11,
+     * which has version 1941.
+     */
+    #if defined(_MSC_VER) && \
+        (defined(__AVX__) || \
+         (_MSC_VER >= 1941 && (defined(_M_ARM64) || defined(_M_ARM64EC))))
+        #if IGRAPH_INTEGER_SIZE == 32
+            #define IGRAPH_POPCOUNT(x) __popcnt(x)
+        #elif IGRAPH_INTEGER_SIZE == 64 && defined(_WIN64)
+            #define IGRAPH_POPCOUNT(x) __popcnt64(x)
+        #endif
     #endif
 
-    #if IGRAPH_INTEGER_SIZE == 32
-        #ifdef IGRAPH_I_HAVE_POPCNT_INTRINSIC
-            #define IGRAPH_I_POPCOUNT32(x) __popcnt(x)
-        #else
-            igraph_int_t igraph_i_popcnt(igraph_uint_t x);
-            #define IGRAPH_I_POPCOUNT32(x) igraph_i_popcnt(x)
-        #endif
-    #elif IGRAPH_INTEGER_SIZE == 64
-        #if defined(IGRAPH_I_HAVE_POPCNT_INTRINSIC) && defined(_M_X64)
-            #define IGRAPH_I_POPCOUNT64(x) __popcnt64(x)
-        #else
-            igraph_int_t igraph_i_popcnt(igraph_uint_t x);
-            #define IGRAPH_I_POPCOUNT64(x) igraph_i_popcnt(x)
-        #endif
-    #else
-        #error "Unexpected IGRAPH_INTEGER_SIZE value."
+    #ifndef IGRAPH_POPCOUNT
+        igraph_int_t igraph_i_popcnt(igraph_uint_t x);
+        #define IGRAPH_POPCOUNT(x) igraph_i_popcnt(x)
     #endif
 
     igraph_int_t igraph_i_ctz32(igraph_uint_t x);
@@ -215,16 +215,12 @@ IGRAPH_BEGIN_C_DECLS
     #define IGRAPH_I_CTZ64(x) igraph_i_ctz64(x)
     #define IGRAPH_I_CLZ32(x) igraph_i_clz32(x)
     #define IGRAPH_I_CLZ64(x) igraph_i_clz64(x)
-
 #endif
 
-
 #if IGRAPH_INTEGER_SIZE == 32
-    #define IGRAPH_POPCOUNT IGRAPH_I_POPCOUNT32
     #define IGRAPH_CLZ IGRAPH_I_CLZ32
     #define IGRAPH_CTZ IGRAPH_I_CTZ32
 #elif IGRAPH_INTEGER_SIZE == 64
-    #define IGRAPH_POPCOUNT IGRAPH_I_POPCOUNT64
     #define IGRAPH_CLZ IGRAPH_I_CLZ64
     #define IGRAPH_CTZ IGRAPH_I_CTZ64
 #else
